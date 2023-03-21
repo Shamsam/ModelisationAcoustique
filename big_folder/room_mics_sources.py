@@ -1,8 +1,8 @@
 import numpy as np
 import pyroomacoustics as pra
 import matplotlib.pyplot as plt
-from big_folder.plot_rir_animation import plot_rir_animation
-from big_folder.reponse_impul_et_freq import afficherRepImpulsEtFreq
+from plot_rir_animation import plot_rir_animation
+from reponse_impul_et_freq import afficherRepImpulsEtFreq
 
 room_dim = [5, 4, 3] 
 absorption = 0.5

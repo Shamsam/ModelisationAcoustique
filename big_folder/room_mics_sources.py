@@ -32,7 +32,6 @@ room.plot() #Plots walls, mics, source and images, no RIR, 3D
 plt.show()
 plot_rir_animation(room, mics=None) #pour source 0
 afficherRepImpulsEtFreq(room, source=0) #pour source 0
-
 #afficher réponse de different mic selon une source
 #deux sources sur un mic
 #direction des sources

@@ -49,7 +49,7 @@ mic_locs = np.array([
 src_locs = np.array([
                     [1, 1, 1.5], 
                     [3, 1, 1.5],
-                    [2, 1, 1.5] #error broadcasting shapes
+                    [2, 1, 1.5] 
                     ])
 
 for src_loc in src_locs:

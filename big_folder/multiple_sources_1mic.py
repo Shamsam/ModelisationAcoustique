@@ -7,7 +7,7 @@ def adding_rir(room, mic, sources):
 
     rirtot = 0
 
-    for i in range(sources):
+    for i in sources:
         rirtot += room.rir[mic][i]
 
     rirtot = rirtot / np.max(np.abs(rirtot))
@@ -52,4 +52,4 @@ for mic_loc in mic_locs:
     room.add_microphone(mic_loc)
 
 room.compute_rir() 
-adding_rir(room, mic=0, sources=room.n_sources)
+adding_rir(room, mic=0, sources=[0, 1])

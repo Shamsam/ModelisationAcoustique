@@ -4,11 +4,18 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 
 def adding_rir(room, mic, sources):
+    lenRIR = []
+    for i in range(len(room.rir[mic])):
+        lenRIR.append(len(room.rir[mic][i]))
+    lenRIR.sort()
+    MaxRIRLen = lenRIR[-1]
+
 
     rirtot = 0
 
     for i in sources:
-        rirtot += room.rir[mic][i]
+        TempRIR = room.rir[mic][i]
+        rirtot += np.resize(TempRIR, MaxRIRLen)
 
     rirtot = rirtot / np.max(np.abs(rirtot))
     freq, response = signal.freqz(rirtot, fs=room.fs)
@@ -52,4 +59,4 @@ for mic_loc in mic_locs:
     room.add_microphone(mic_loc)
 
 room.compute_rir() 
-adding_rir(room, mic=0, sources=[0, 1])
+adding_rir(room, mic=0, sources=[0, 1, 2])

@@ -66,3 +66,7 @@ for mic_loc in mic_locs:
 
 room.compute_rir() 
 adding_rir(room, mic=0, sources=[0, 1, 2])
+""" room.plot_rir()
+plt.show()
+room.plot_rir(FD=True)
+plt.show() """

@@ -5,8 +5,9 @@ import scipy.signal as signal
 
 def adding_rir(room, mic, sources):
     
-    MaxRIRLen = max(len(i) for i in room.rir[mic])
-    rirtot = sum(np.resize(room.rir[mic][i], MaxRIRLen) for i in sources)
+    MaxRIRLen = max(len(i) for i in room.rir[mic]) #max length of the RIRs of the sources
+    rirtot = sum(np.resize(room.rir[mic][i], MaxRIRLen) for i in sources) #sum of the RIRs of the sources #np.resize() is used to make the RIRs of the sources the same length
+
     rirtot = rirtot / np.max(np.abs(rirtot))
     freq, response = signal.freqz(rirtot, fs=room.fs)
 

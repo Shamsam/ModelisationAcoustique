@@ -48,7 +48,8 @@ room.compute_rir()
 freq_responses = []
 
 for mic_idx in range(len(mic_positions)):
-    combined_rir = sum(room.rir[mic_idx][src_idx] for src_idx in range(len(src_positions)))
+    MaxRIRLen = max(len(i) for i in room.rir[mic_idx])
+    combined_rir = sum(np.resize(room.rir[mic_idx][src_idx], MaxRIRLen) for src_idx in range(len(src_positions)))
     freq, response = calculate_frequency_response(combined_rir, room.fs)
     freq_responses.append((freq, response))
 

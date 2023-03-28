@@ -16,7 +16,7 @@ src_positions = np.array([
 x = np.linspace(0, room_dim[0], 11)
 y = np.linspace(0, room_dim[1], 11)
 z = np.linspace(0, room_dim[2], 11)
-X, Y, Z = np.meshgrid(x, y, z, indexing='ij')
+X, Y, Z = np.meshgrid(x, y, z, indexing='ij') # 3D grid
 
 # Calculate the sound level at each point in the grid
 sound_level = np.zeros_like(X)
@@ -34,7 +34,7 @@ for i, xi in enumerate(x):
             room.compute_rir()
             for src_idx in range(len(src_positions)):
                 rir = room.rir[0][src_idx]
-                sound_level[i, j, k] += np.sum(np.square(rir))
+                sound_level[i, j, k] += np.sum(np.square(rir)) # Sound energy
 
 # Normalize sound level
 sound_level /= np.max(sound_level)
@@ -44,7 +44,7 @@ fig = plt.figure(figsize=(10, 8))
 ax = fig.add_subplot(111, projection='3d')
 
 for src_pos in src_positions:
-    ax.scatter(*src_pos, color='red', marker='x', s=100)
+    ax.scatter(*src_pos, color='red', marker='x', s=100) # Source position
 
 scatter = ax.scatter(X, Y, Z, c=sound_level.flatten(), cmap='viridis', alpha=0.5)
 

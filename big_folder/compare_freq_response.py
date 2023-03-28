@@ -4,14 +4,14 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 
 def calculate_frequency_response(rir, fs):
-    rir_norm = rir / np.max(np.abs(rir))
-    freq, response = signal.freqz(rir_norm, fs=fs)
+    rir_norm = rir / np.max(np.abs(rir)) # normalize the RIR
+    freq, response = signal.freqz(rir_norm, fs=fs) # calculate the frequency response
     return freq, response
 
 def plot_frequency_responses(freq_responses, mic_positions):
-    fig, axs = plt.subplots(len(mic_positions), 1, figsize=(8, 4 * len(mic_positions)))
+    fig, axs = plt.subplots(len(mic_positions), 1, figsize=(8, 4 * len(mic_positions))) # create a figure with one subplot per microphone
 
-    for i, (freq, response) in enumerate(freq_responses):
+    for i, (freq, response) in enumerate(freq_responses): # i is the mic index
         axs[i].plot(freq, 20 * np.log10(np.abs(response)))
         axs[i].set_xlabel('Frequency (Hz)')
         axs[i].set_ylabel('Amplitude (dB)')
@@ -47,10 +47,10 @@ room.compute_rir()
 
 freq_responses = []
 
-for mic_idx in range(len(mic_positions)):
-    MaxRIRLen = max(len(i) for i in room.rir[mic_idx])
-    combined_rir = sum(np.resize(room.rir[mic_idx][src_idx], MaxRIRLen) for src_idx in range(len(src_positions)))
-    freq, response = calculate_frequency_response(combined_rir, room.fs)
+for mic_idx in range(len(mic_positions)): # for each microphone
+    MaxRIRLen = max(len(i) for i in room.rir[mic_idx]) # find the longest RIR
+    combined_rir = sum(np.resize(room.rir[mic_idx][src_idx], MaxRIRLen) for src_idx in range(len(src_positions))) # combine all sources
+    freq, response = calculate_frequency_response(combined_rir, room.fs) # calculate frequency response
     freq_responses.append((freq, response))
 
 plot_frequency_responses(freq_responses, mic_positions)

@@ -52,7 +52,7 @@ def plot_2d_slice(ax, plane_data, plane, fixed_axis_val, src_positions, room_dim
     ax.set_title(f'{plane}-plane at {fixed_axis_val}')
     return im # Return the image so we can add a colorbar
 
-fig, axs = plt.subplots(1, len(z), figsize=(5 * len(z), 5), sharey=True) # Create a figure with a subplot for each z-slice
+fig, axs = plt.subplots(1, len(z), figsize=(10 * len(z), 10), sharey=True) # Create a figure with a subplot for each z-slice
 
 for k, zk in enumerate(z): # Plot each z-slice
     im = plot_2d_slice(axs[k], sound_level[:, :, k].T, 'XY', zk, src_positions, room_dim)
@@ -61,7 +61,7 @@ for k, zk in enumerate(z): # Plot each z-slice
     if k > 0: # Hide the y-axis ticks for all but the first subplot
         axs[k].set_title(f'{zk:.1f}')
 
-fig.subplots_adjust(right=0.8, wspace=1) # Adjust the spacing between subplots
+fig.subplots_adjust(right=0.8, wspace=0.5) # Adjust the spacing between subplots
 cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7]) # Create an axes for the colorbar
 cbar = plt.colorbar(im, cax=cbar_ax) # Add a colorbar
 cbar.set_label('Normalized Sound Level')

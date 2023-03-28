@@ -10,20 +10,33 @@ def adding_rir(room, mic, sources):
     rirtot = rirtot / np.max(np.abs(rirtot))
     freq, response = signal.freqz(rirtot, fs=room.fs)
 
-    fig, axs = plt.subplots(len(sources) + 1, 1, figsize=(8, 6 * (len(sources) + 1)))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+    colors = ['r', 'g', 'b', 'm', 'c', 'y', 'k']
 
     for i, src in enumerate(sources):
-        axs[i].plot(room.rir[mic][src])
-        axs[i].set_xlabel('Time (samples)')
-        axs[i].set_ylabel('Amplitude')
-        axs[i].set_title(f'Room Impulse Response for Source {src}')
+        color = colors[i % len(colors)]
+        ax1.plot(room.rir[mic][src], color=color, label=f'Source {src}')
     
-    axs[-1].plot(rirtot)
-    axs[-1].set_xlabel('Time (samples)')
-    axs[-1].set_ylabel('Amplitude')
-    axs[-1].set_title('Combined Room Impulse Response')
+    ax1.set_xlabel('Time (samples)')
+    ax1.set_ylabel('Amplitude')
+    ax1.set_title('Individual Room Impulse Responses')
+    ax1.legend()
 
-    plt.tight_layout()
+    ax2.plot(rirtot)
+    ax2.set_xlabel('Time (samples)')
+    ax2.set_ylabel('Amplitude')
+    ax2.set_title('Combined Room Impulse Response')
+
+    plt.show()
+
+    fig2, ax = plt.subplots(figsize=(8, 6))
+    ax.plot(np.abs(freq), 20 * np.log10(np.abs(response)))
+    ax.set_xlabel('Frequency (Hz)')
+    ax.set_ylabel('Amplitude (dB)')
+    ax.set_title('Frequency Response of the Combined Room Impulse Response') #specific to the position of the microphone
+    ax.grid()
+
     plt.show()
 
 

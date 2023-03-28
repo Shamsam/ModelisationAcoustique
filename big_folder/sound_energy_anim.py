@@ -62,6 +62,10 @@ def update(frame):
         axs[k].clear()
         im = plot_2d_slice(axs[k], sound_level_time[:, :, k, frame].T, 'XY', zk, src_positions, room_dim, cmap='viridis')
         axs[k].set_title(f'Z = {zk:.1f} | Frame: {frame}')
+        if k > 0:
+            axs[k].set_ylabel("")
+        if k > 0:
+            axs[k].set_title(f'{zk:.1f}')
 
 
 ani = animation.FuncAnimation(fig, update, frames=n_time_frames, interval=50, repeat=True)

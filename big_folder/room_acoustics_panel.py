@@ -7,6 +7,34 @@ import holoviews as hv
 
 pn.extension()
 
+class Room:
+    def __init__(self, room_dim, absorption, fs=16000, max_order=3):
+        self.room = pra.ShoeBox(room_dim, fs=fs, absorption=absorption, max_order=max_order)
+
+    def add_microphone(self, mic_position):
+        self.room.add_microphone(mic_position)
+
+    def add_source(self, src_position):
+        self.room.add_source(src_position)
+
+    def compute_rir(self):
+        self.room.compute_rir()
+
+    def get_rir(self, mic_idx, src_idx):
+        return self.room.rir[mic_idx][src_idx]
+
+    def get_fs(self):
+        return self.room.fs
+
+class Microphone:
+    def __init__(self, position):
+        self.position = position
+
+class Source:
+    def __init__(self, position):
+        self.position = position
+
+
 def calculate_frequency_response(rir, fs):
     rir_norm = rir / np.max(np.abs(rir)) # normalize the RIR
     freq, response = signal.freqz(rir_norm, fs=fs) # calculate the frequency response
@@ -46,7 +74,26 @@ def update(event):
     mic_positions = np.array([mic1_input.value, mic2_input.value, mic3_input.value])
     src_positions = np.array([src1_input.value, src2_input.value, src3_input.value])
 
-    freq_responses = compute_responses(room_dim, absorption, mic_positions, src_positions)
+    room = Room(room_dim, absorption)
+    microphones = [Microphone(pos) for pos in mic_positions]
+    sources = [Source(pos) for pos in src_positions]
+
+    for mic in microphones:
+        room.add_microphone(mic.position)
+
+    for src in sources:
+        room.add_source(src.position)
+
+    room.compute_rir()
+
+    freq_responses = []
+
+    for mic_idx in range(len(microphones)): # for each microphone
+        MaxRIRLen = max(len(room.get_rir(mic_idx, src_idx)) for src_idx in range(len(sources))) # find the longest RIR
+        combined_rir = sum(np.resize(room.get_rir(mic_idx, src_idx), MaxRIRLen) for src_idx in range(len(sources))) # combine all sources
+        freq, response = calculate_frequency_response(combined_rir, room.get_fs()) # calculate frequency response
+        freq_responses.append((freq, response))
+
     plots = plot_frequency_responses(freq_responses)
     plot_pane.object = hv.Layout(plots).cols(1)
 

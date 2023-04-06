@@ -128,3 +128,5 @@ inputs = pn.Column(room_dim_input, absorption_input, mic1_input, mic2_input, mic
 app = pn.Row(inputs, plot_pane)
 app.servable()
 
+#Write command to run the app: panel serve big_folder\room_acoustics_panel.py
+# Open the app in the browser: http://localhost:5006/room_acoustics_panel (whatever the port number is in the terminal)

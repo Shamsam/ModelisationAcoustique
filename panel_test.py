@@ -83,7 +83,7 @@ input_widgets = {
 }
 
 
-def update_positions(event):
+def update_positions(event): # Update the position input widgets when the number of microphones or sources changes
     num_positions = event.new
     prefix = 'Mic' if event.obj is input_widgets['num_mics'] else 'Source'
 
@@ -126,6 +126,6 @@ initial_freq_responses = compute_responses(
 initial_plots = plot_frequency_responses(initial_freq_responses)
 plot_pane = pn.pane.HoloViews(hv.Layout(initial_plots).cols(1), width=800, height=400)
 
-# Create the app layout with the inputs panel and the plot pane
+
 app = pn.Row(inputs, plot_pane)
 app.servable()

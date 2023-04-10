@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 import panel as pn
 import holoviews as hv
-from panel_folder.response_calculations import compute_rir, calculate_responses
+from response_calculations import freq_resp, compute_rir, calculate_responses
 
 room_dim = [5, 4, 3]
 absorption = 0.5
@@ -22,8 +22,8 @@ src_positions = np.array([
     [2, 1, 1.5]
 ])
 
-compute_rir(room_dim, absorption, 3, mic_positions, src_positions)
+room = compute_rir(room_dim, absorption, 3, mic_positions, src_positions)
 
-calculate_responses(room, mic_positions, src_positions)
+freq_responses = calculate_responses(room, mic_positions, src_positions)
 
-
+print(freq_responses)

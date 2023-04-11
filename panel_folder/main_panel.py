@@ -10,20 +10,21 @@ room_dim = [5, 4, 3]
 absorption = 0.5
 room = pra.ShoeBox(room_dim, fs=16000, absorption=absorption, max_order=3)
 
-mic_positions = np.array([
-    [2.5, 2, 1],
-    [2.5, 2.5, 1],
-    [2.5, 3, 1]
-])
 
-src_positions = np.array([
-    [1, 1, 1.5],
-    [3, 1, 1.5],
-    [2, 1, 1.5]
-])
+mic_positions = {
+    "mic_1": [2.5, 2, 1],
+    "mic_2": [2.5, 2.5, 1],
+    "mic_3": [2.5, 3, 1]
+}
+
+src_positions = {
+    "src_1": [1, 1, 1.5],
+    "src_2": [3, 1, 1.5],
+    "src_3": [2, 1, 1.5]
+}
 
 room = compute_rir(room_dim, absorption, 3, mic_positions, src_positions)
 
 freq_responses = calculate_responses(room, mic_positions, src_positions)
 
-print(freq_responses)
+print(freq_responses.keys())

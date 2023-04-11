@@ -3,13 +3,13 @@ import scipy.signal as signal
 import pyroomacoustics as pra
 
 
-def freq_resp(room: pra.Room, norm_ir):
+def freq_resp(room: pra.ShoeBox, norm_ir):
     """Compute the frequency response of the room impulse response.\n
     **NOT OFFICIAL pyroomacoustics function**
 
     Parameters
     ----------
-    room : pyroomacoustics.Room
+    room : pyroomacoustics.ShoeBox
         The room object.
     norm_ir : ndarray
         The normalized room impulse response.
@@ -18,32 +18,33 @@ def freq_resp(room: pra.Room, norm_ir):
     -------
     freq_response : tuple
         The frequency response of the room impulse response.
-        (freq, response)
-    
+        format : (freq, response)
+            
     """
+
     freq, response = signal.freqz(norm_ir, fs=room.fs)
     freq_response = (freq, response)
     return freq_response
 
 
-def compute_rir(room_dim, absorption, max_order, mic_positions, src_positions):
+def compute_rir(room_dim, absorption, max_order: int, mic_positions: dict, src_positions: dict):
     """Compute the room impulse response of the room.\n
     **NOT OFFICIAL pyroomacoustics function**
 
     Parameters
     ----------
-    room_dim : tuple
+    room_dim : list
         The dimensions of the room.
     absorption : float
         The absorption coefficient of the room.
     max_order : int
         The maximum reflection order of the room.
-    mic_positions : array
+    mic_positions : dict
         The microphone positions.
-        format: [[x1, y1, z1], [x2, y2, z2], ...]
-    src_positions : array
+        format: {"mic_1": [x1, y1, z1], "mic_2": [x2, y2, z2], ...}
+    src_positions : dict
         The source positions.
-        format: [[x1, y1, z1], [x2, y2, z2], ...]
+        format: {"src_1": [x1, y1, z1], "src_2": [x2, y2, z2], ...}
 
     Returns
     -------
@@ -54,30 +55,31 @@ def compute_rir(room_dim, absorption, max_order, mic_positions, src_positions):
     """
 
     room = pra.ShoeBox(room_dim, fs=16000, absorption=absorption, max_order=max_order)    
-    for src_pos in src_positions:
+    for src_pos in src_positions.values():
         room.add_source(src_pos)
 
-    for mic_pos in mic_positions:
-        room.add_microphone(mic_pos)
+    for mic_pos in mic_positions.values():
+        room.add_microphone_array(pra.MicrophoneArray(np.array([mic_pos]).T, room.fs))
+
 
     room.compute_rir()
     return room
 
-def calculate_responses(room: pra.ShoeBox, mic_positions, src_positions):
+def calculate_responses(room: pra.ShoeBox, mic_positions: dict, src_positions: dict):
     """Compute the frequency response of the room impulse response.\n
     **NOT OFFICIAL pyroomacoustics function**
 
     Parameters
     ----------
-    room : pyroomacoustics.Room
+    room : pyroomacoustics.ShoeBox
         The room object.
         Access the room impulse response: room.rir[mic_idx][src_idx]
-    mic_positions : array
+    mic_positions : dict
         The microphone positions.
-        format: [[x1, y1, z1], [x2, y2, z2], ...]
-    src_positions : array
+        format: {"mic_1": [x1, y1, z1], "mic_2": [x2, y2, z2], ...}
+    src_positions : dict
         The source positions.
-        format: [[x1, y1, z1], [x2, y2, z2], ...]
+        format: {"src_1": [x1, y1, z1], "src_2": [x2, y2, z2], ...}
 
     Returns
     -------
@@ -90,12 +92,12 @@ def calculate_responses(room: pra.ShoeBox, mic_positions, src_positions):
 
     freq_responses = {}
     for mic_idx in range(len(mic_positions)):
-        max_rir_len = max(len(room.rir[mic_idx][src_idx]) for src_idx in range(len(src_positions)))
-        combined_rir = sum(np.resize(room.rir[mic_idx][src_idx], max_rir_len) for src_idx in range(len(src_positions)))
-        freq, response = freq_resp(room, combined_rir)
-        freq_responses[f"mic_{mic_idx + 1}"] = (freq, response)
+        max_rir_len = max(len(room.rir[mic_idx][src_idx]) for src_idx in range(len(src_positions))) 
+        combined_rir = sum(np.resize(room.rir[mic_idx][src_idx], max_rir_len) for src_idx in range(len(src_positions))) 
+        freq, response = freq_resp(room, combined_rir) 
+        freq_responses[f"mic_{mic_idx + 1}"] = (freq, response) 
+    
+    
 
 
     return freq_responses
-
-#to do: in compute_rir, also create new mic_positions and src_positions dictionaries with the same length as the number of mics and sources

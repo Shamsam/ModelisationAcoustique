@@ -39,7 +39,7 @@ def update(event):
 
     room = compute_rir(room_dim, absorption, 3, mic_positions, src_positions)
     responses = calculate_responses(room, mic_positions, src_positions)
-    freq_plots = plot_freq_response(responses, mic_positions, src_positions)
+    freq_plots = plot_freq_response(responses, mic_positions)
     plot_pane.object = freq_plots
 
 
@@ -64,9 +64,22 @@ inputs = pn.Column(
     src2_input,
     src3_input
 )
+initial_room_dim = (5, 4, 3)
+initial_absorption = 0.5
+initial_mic_positions = {
+    "mic_1": (2.5, 2, 1),
+    "mic_2": (2.5, 2.5, 1),
+    "mic_3": (2.5, 3, 1)
+}
+initial_src_positions = {
+    "src_1": (1, 1, 1.5),
+    "src_2": (3, 1, 1.5),
+    "src_3": (2, 1, 1.5)
+}
 
-initial_freq_responses = compute_rir((5, 4, 3), 0.5, 3, {"mic_1": (2.5, 2, 1), "mic_2": (2.5, 2.5, 1), "mic_3": (2.5, 3, 1)}, {"src_1": (1, 1, 1.5), "src_2": (3, 1, 1.5), "src_3": (2, 1, 1.5)})
-initial_plots = plot_freq_response(initial_freq_responses, {"mic_1": (2.5, 2, 1), "mic_2": (2.5, 2.5, 1), "mic_3": (2.5, 3, 1)}, {"src_1": (1, 1, 1.5), "src_2": (3, 1, 1.5), "src_3": (2, 1, 1.5)})
+initial_room = compute_rir(initial_room_dim, initial_absorption, 3, initial_mic_positions, initial_src_positions)
+initial_freq_responses = calculate_responses(initial_room, initial_mic_positions, initial_src_positions)
+initial_plots = plot_freq_response(initial_freq_responses, initial_mic_positions)
 plot_pane = pn.pane.HoloViews(hv.Layout(initial_plots).cols(1), width=800, height=400)
 
 pn.Row(inputs, plot_pane).servable()

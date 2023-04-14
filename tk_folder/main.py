@@ -78,7 +78,19 @@ class DynamicDictionnary(ttk.Frame):
             entry = ttk.Label(self, textvariable=data_var)
             entry.grid(column=1, row=index, sticky=tk.W)
 
+class RoomParametersFrame(ttk.Frame):
+    def __init__(self, container):
+        super().__init__(container)
+        ttk.Label(self, text="Room Parameters").grid(column=0, row=0, padx=10, pady=10)
+        BaseParameters(self).grid(column=0, row=1, sticky=tk.W)
 
+class DictionnaryFrame(ttk.Frame):
+    def __init__(self, container, param_type, shared_data):
+        super().__init__(container)
+        ttk.Label(self, text=f"{param_type} Dictionnary").grid(column=0, row=0, padx=10, pady=10)
+        dictionnary = DynamicDictionnary(self, param_type, shared_data)
+        dictionnary.grid(column=0, row=1, sticky=tk.W)
+        DynamicParameters(self, param_type, shared_data, dictionnary).grid(column=0, row=2, sticky=tk.W)
 
 class MainFrame(ttk.Frame):
     def __init__(self, container):
@@ -91,23 +103,10 @@ class MainFrame(ttk.Frame):
     def create_widgets(self):
         shared_data = SharedData()
         
-        ttk.Label(self, text="Room Parameters").grid(column=0, row=0, padx=10, pady=10)
-        BaseParameters(self).grid(column=0, row=1, sticky=tk.W)
-        
-        ttk.Label(self, text="Mic Dictionnary").grid(column=1, row=0, padx=10, pady=10)
+        RoomParametersFrame(self).grid(column=0, row=0, sticky=tk.W)
+        DictionnaryFrame(self, "Mic", shared_data).grid(column=1, row=0, sticky=tk.W)
+        DictionnaryFrame(self, "Src", shared_data).grid(column=1, row=1, sticky=tk.W)
 
-        
-        ttk.Label(self, text="Src Dictionnary").grid(column=1, row=2, padx=10, pady=10)
-
-
-        mic_dictionnary = DynamicDictionnary(self, "Mic", shared_data)
-        mic_dictionnary.grid(column=1, row=1, sticky=tk.W)
-
-        src_dictionnary = DynamicDictionnary(self, "Src", shared_data)
-        src_dictionnary.grid(column=1, row=3, sticky=tk.W)
-
-        DynamicParameters(self, "Mic", shared_data, mic_dictionnary).grid(column=0, row=2, sticky=tk.W)
-        DynamicParameters(self, "Src", shared_data, src_dictionnary).grid(column=0, row=3, sticky=tk.W)
 
 
 class App(tk.Tk):

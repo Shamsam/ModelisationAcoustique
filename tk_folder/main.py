@@ -2,10 +2,12 @@ import tkinter as tk
 from tkinter import ttk
 from functools import partial
 
+
 class SharedData:
     def __init__(self):
         self.mic_data = {}
         self.src_data = {}
+
 
 class BaseParameters(ttk.Frame):
     def __init__(self, container):
@@ -18,6 +20,7 @@ class BaseParameters(ttk.Frame):
             ttk.Label(self, text=text).grid(column=0, row=index, sticky=tk.W, padx=5, pady=5)
             entry = ttk.Entry(self, textvariable=self.base_vars[index])
             entry.grid(column=1, row=index, sticky=tk.W)
+
 
 class DynamicParameters(ttk.Frame):
     def __init__(self, container, param_type, shared_data, dictionnary):
@@ -60,6 +63,7 @@ class DynamicParameters(ttk.Frame):
         entry.grid_forget()
         btn.grid_forget()
 
+
 class DynamicDictionnary(ttk.Frame):
     def __init__(self, container, param_type, shared_data):
         super().__init__(container)
@@ -78,11 +82,13 @@ class DynamicDictionnary(ttk.Frame):
             entry = ttk.Label(self, textvariable=data_var)
             entry.grid(column=1, row=index, sticky=tk.W)
 
+
 class RoomParametersFrame(ttk.Frame):
     def __init__(self, container):
         super().__init__(container)
         ttk.Label(self, text="Room Parameters").grid(column=0, row=0, padx=10, pady=10)
         BaseParameters(self).grid(column=0, row=1, sticky=tk.W)
+
 
 class DictionnaryFrame(ttk.Frame):
     def __init__(self, container, param_type, shared_data):
@@ -91,6 +97,7 @@ class DictionnaryFrame(ttk.Frame):
         dictionnary = DynamicDictionnary(self, param_type, shared_data)
         dictionnary.grid(column=0, row=1, sticky=tk.W)
         DynamicParameters(self, param_type, shared_data, dictionnary).grid(column=0, row=2, sticky=tk.W)
+
 
 class MainFrame(ttk.Frame):
     def __init__(self, container):
@@ -108,7 +115,6 @@ class MainFrame(ttk.Frame):
         DictionnaryFrame(self, "Src", shared_data).grid(column=1, row=1, sticky=tk.W)
 
 
-
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -119,7 +125,3 @@ if __name__ == "__main__":
     app = App()
     MainFrame(app)
     app.mainloop()
-
-
-
-

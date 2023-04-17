@@ -1,5 +1,11 @@
 import tkinter as tk
 import tkinter.ttk as ttk
+from functions_ import calculate_responses, compute_rir, plot_freq_response
+import numpy as np
+import scipy.signal as signal
+import pyroomacoustics as pra
+import matplotlib.pyplot as plt
+
 
 class SharedData:
     def __init__(self):
@@ -50,10 +56,10 @@ class BaseParameters(ttk.Frame):
         self.room_dim_frame.grid(column=1, row=row, sticky=tk.W)
         for i, var in enumerate(variables):
             entry = ttk.Entry(master=self.room_dim_frame, textvariable=var, width=6)
-            entry.grid(column=i, row=0, sticky=tk.W)
+            entry.grid(column=i, row=0, sticky=tk.W) 
 
 
-class MicParameters(ttk.Frame):
+class MicParameters(ttk.Frame): 
     def __init__(self, container, shared_data):
         super().__init__(container)
         self.mic_data = shared_data.microphone_data
@@ -136,20 +142,41 @@ class SrcParameters(ttk.Frame):
                 if child_index > index:
                     child.grid(row=child_index)
 
+
 class CalculationsParameters(ttk.Frame):
     def __init__(self, container, shared_data):
         super().__init__(container)
         self.shared_data = shared_data
         self.calculate_btn = ttk.Button(self, text="Calculate", command=self.calculate, width=30)
         self.calculate_btn.grid(column=0, row=0, sticky=tk.N, padx=5, pady=5)
+
     
     def calculate(self):
-        print(self.shared_data.absorption)
-        print(self.shared_data.max_reflection_order)
-        print(self.shared_data.room_dimensions)
-        print(self.shared_data.microphone_data)
-        print(self.shared_data.source_data)
+        self.shared_data.absorption.set(round(self.shared_data.absorption.get(), 2))
+        self.new_microphone_data = {}
+        self.new_source_data = {}
+        for key, value in self.shared_data.microphone_data.items():
+            self.new_microphone_data[key] = [value[0].get(), value[1].get(), value[2].get()]
+        for key, value in self.shared_data.source_data.items():
+            self.new_source_data[key] = [value[0].get(), value[1].get(), value[2].get()]
 
+        room_dim = [self.shared_data.room_dimensions[0].get(), self.shared_data.room_dimensions[1].get(), self.shared_data.room_dimensions[2].get()]
+        abs = self.shared_data.absorption.get()
+        max_reflection_order = self.shared_data.max_reflection_order.get()
+        mic_data = self.new_microphone_data
+        src_data = self.new_source_data
+
+        print(room_dim, abs, max_reflection_order, mic_data, src_data)
+
+"""         room = compute_rir(room_dim, abs, max_reflection_order, mic_data, src_data)
+
+        freq_resonses = calculate_responses(room, mic_data, src_data, norm=True, freqresp=True)
+
+        freq_plots = plot_freq_response(freq_resonses, mic_data) """
+
+        
+
+        
 
 
 class MainFrame(ttk.Frame):
@@ -178,3 +205,7 @@ class App(tk.Tk):
 if __name__ == "__main__":
     app = App()
     app.mainloop()
+
+
+# mettre un fichier mp3 en entrée
+#fftw

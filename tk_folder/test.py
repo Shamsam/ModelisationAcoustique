@@ -1,12 +1,11 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 
-
 class SharedData:
     def __init__(self):
-        self.absorption = tk.IntVar(name="absorption")
-        self.max_reflection_order = tk.IntVar(name="max_reflection_order")
-        self.room_dimensions = (tk.IntVar(name="x"), tk.IntVar(name="y"), tk.IntVar(name="z"))
+        self.absorption = tk.DoubleVar(name="absorption_var", value=0.5)
+        self.max_reflection_order = tk.IntVar(name="max_reflection_order_var", value=3)
+        self.room_dimensions = (tk.DoubleVar(name="x", value=5), tk.DoubleVar(name="y", value=5), tk.DoubleVar(name="z", value=5))
 
         self.microphone_data = {}
         self.source_data = {}
@@ -18,9 +17,25 @@ class BaseParameters(ttk.Frame):
         self.abs_data = shared_data.absorption
         self.max_ref_data = shared_data.max_reflection_order
         self.room_dim_data = shared_data.room_dimensions
-        self.create_widgets("Absorption", self.abs_data, 0)
+        self.create_scale("Absorption", self.abs_data, 0)
         self.create_widgets("Max reflection order", self.max_ref_data, 1)
         self.create_room_dim_widget("Room dimensions", self.room_dim_data, 2)
+
+    def create_scale(self, text, variable, row):
+        label = ttk.Label(self, text=text)
+        label.grid(column=0, row=row, sticky=tk.W, padx=5, pady=5)
+        scale = ttk.Scale(self, from_=0, to=1, variable=variable, orient=tk.HORIZONTAL, length=120)
+        scale.grid(column=1, row=row, sticky=tk.W)
+        variable_value = round(variable.get(), 2)
+        variable.set(variable_value)
+        ticklabel = ttk.Label(self, text=variable_value, width=4)
+        ticklabel.grid(column=2, row=row, sticky=tk.W)
+
+        def update_ticklabel(*args):
+            ticklabel.configure(text=round(variable.get(), 2))
+
+        variable.trace_add("write", update_ticklabel)
+
         
     def create_widgets(self, text, variable, row):
         label = ttk.Label(self, text=text)
@@ -46,22 +61,38 @@ class MicParameters(ttk.Frame):
         self.add_param_btn.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
 
     def add_param(self):
-        if len(self.mic_data) == 0:
-            index = 0
-        else:
-            index = int(list(self.mic_data.keys())[-1][-1]) + 1
+        index = 0
+        while f'mic{index}' in self.mic_data:
+            index += 1
 
-        self.mic_data[f'mic{index}'] = (tk.IntVar(name=f"mic{index}_x"), tk.IntVar(name=f"mic{index}_y"), tk.IntVar(name=f"mic{index}_z"))
-        self.create_mic_widget(f"mic{index}", self.mic_data[f'mic{index}'], len(self.mic_data))
+        self.mic_data[f'mic{index}'] = (tk.DoubleVar(name=f"mic{index}_x"), tk.DoubleVar(name=f"mic{index}_y"), tk.DoubleVar(name=f"mic{index}_z"))
+        self.create_mic_widget(f"mic{index}", self.mic_data[f'mic{index}'], index + 1)
 
     def create_mic_widget(self, text, variables, row):
-        label = ttk.Label(self, text=text)
-        label.grid(column=0, row=row, sticky=tk.W, padx=5, pady=5)
-        self.mic_frame = ttk.Frame(self)
-        self.mic_frame.grid(column=1, row=row, sticky=tk.W)
+        self.mic_grid = ttk.Frame(self)
+        self.mic_grid.grid(column=0, row=row, sticky=tk.W)
+        label = ttk.Label(self.mic_grid, text=text)
+        label.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
+        mic_frame = ttk.Frame(self.mic_grid)
+        mic_frame.grid(column=1, row=0, sticky=tk.W)
         for i, var in enumerate(variables):
-            entry = ttk.Entry(master=self.mic_frame, textvariable=var, width=6)
+            entry = ttk.Entry(master=mic_frame, textvariable=var, width=6)
             entry.grid(column=i, row=0, sticky=tk.W)
+        btn = ttk.Button(self.mic_grid, text="X", command=lambda: self.remove_param(text))
+        btn.grid(column=2, row=0, sticky=tk.W, padx=5, pady=5)
+    
+    def remove_param(self, text):
+        index = int(text[3:])
+        self.mic_data.pop(text)
+
+        frame_to_remove = self.grid_slaves(row=index + 1, column=0)[0]
+        frame_to_remove.destroy()
+
+        for child in self.winfo_children():
+            if isinstance(child, ttk.Frame) and child != self.mic_grid:
+                child_index = int(child.children['!label'].cget('text')[3:])
+                if child_index > index:
+                    child.grid(row=child_index)
 
 
 class SrcParameters(ttk.Frame):
@@ -76,7 +107,7 @@ class SrcParameters(ttk.Frame):
         while f'src{index}' in self.src_data:
             index += 1
 
-        self.src_data[f'src{index}'] = (tk.IntVar(name=f"src{index}_x"), tk.IntVar(name=f"src{index}_y"), tk.IntVar(name=f"src{index}_z"))
+        self.src_data[f'src{index}'] = (tk.DoubleVar(name=f"src{index}_x"), tk.DoubleVar(name=f"src{index}_y"), tk.DoubleVar(name=f"src{index}_z"))
         self.create_src_widget(f"src{index}", self.src_data[f'src{index}'], index + 1)
 
     def create_src_widget(self, text, variables, row):
@@ -105,6 +136,21 @@ class SrcParameters(ttk.Frame):
                 if child_index > index:
                     child.grid(row=child_index)
 
+class CalculationsParameters(ttk.Frame):
+    def __init__(self, container, shared_data):
+        super().__init__(container)
+        self.shared_data = shared_data
+        self.calculate_btn = ttk.Button(self, text="Calculate", command=self.calculate, width=30)
+        self.calculate_btn.grid(column=0, row=0, sticky=tk.N, padx=5, pady=5)
+    
+    def calculate(self):
+        print(self.shared_data.absorption)
+        print(self.shared_data.max_reflection_order)
+        print(self.shared_data.room_dimensions)
+        print(self.shared_data.microphone_data)
+        print(self.shared_data.source_data)
+
+
 
 class MainFrame(ttk.Frame):
     def __init__(self, container, shared_data):
@@ -113,9 +159,11 @@ class MainFrame(ttk.Frame):
         self.base_parameters = BaseParameters(self, self.shared_data)
         self.mic_parameters = MicParameters(self, self.shared_data)
         self.src_parameters = SrcParameters(self, self.shared_data)
+        self.calculations_parameters = CalculationsParameters(self, self.shared_data)
         self.base_parameters.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
         self.mic_parameters.grid(column=0, row=1, sticky=tk.W, padx=5, pady=5)
         self.src_parameters.grid(column=0, row=2, sticky=tk.W, padx=5, pady=5)
+        self.calculations_parameters.grid(column=1, row=0, sticky=tk.W, padx=5, pady=5)
 
 
 class App(tk.Tk):

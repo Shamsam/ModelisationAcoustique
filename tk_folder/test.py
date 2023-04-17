@@ -3,7 +3,6 @@ import tkinter.ttk as ttk
 from functools import partial
 
 
-
 class SharedData:
     def __init__(self):
         self.absorption = tk.IntVar(name="absorption")
@@ -40,7 +39,6 @@ class BaseParameters(ttk.Frame):
             entry.grid(column=i, row=0, sticky=tk.W)
 
 
-
 class MicParameters(ttk.Frame):
     def __init__(self, container, shared_data):
         super().__init__(container)
@@ -66,7 +64,6 @@ class MicParameters(ttk.Frame):
             entry = ttk.Entry(master=self.mic_frame, textvariable=var, width=6)
             entry.grid(column=i, row=0, sticky=tk.W)
 
-        
 
 class SrcParameters(ttk.Frame):
     def __init__(self, container, shared_data):
@@ -75,15 +72,13 @@ class SrcParameters(ttk.Frame):
         self.add_param_btn = ttk.Button(self, text="+ Src", command=self.add_param)
         self.add_param_btn.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
 
-    def add_param(self): 
-        try: 
-            index = int(list(self.src_data.keys())[-1][-1]) + 1
-
-        except IndexError:
-            index = 0
+    def add_param(self):
+        index = 0
+        while f'src{index}' in self.src_data:
+            index += 1
 
         self.src_data[f'src{index}'] = (tk.IntVar(name=f"src{index}_x"), tk.IntVar(name=f"src{index}_y"), tk.IntVar(name=f"src{index}_z"))
-        self.create_src_widget(f"src{index}", self.src_data[f'src{index}'], len(self.src_data))
+        self.create_src_widget(f"src{index}", self.src_data[f'src{index}'], index + 1)
 
     def create_src_widget(self, text, variables, row):
         self.src_grid = ttk.Frame(self)
@@ -98,12 +93,18 @@ class SrcParameters(ttk.Frame):
         btn = ttk.Button(self.src_grid, text="X", command=lambda: self.remove_param(text))
         btn.grid(column=2, row=0, sticky=tk.W, padx=5, pady=5)
     
-    def remove_param(self, text): # here is how to remove the correct widget
+    def remove_param(self, text):
+        index = int(text[3:])
         self.src_data.pop(text)
-        for child in self.src_grid.winfo_children():
-            child.destroy()
-        self.src_grid.destroy()
 
+        frame_to_remove = self.grid_slaves(row=index + 1, column=0)[0]
+        frame_to_remove.destroy()
+
+        for child in self.winfo_children():
+            if isinstance(child, ttk.Frame) and child != self.src_grid:
+                child_index = int(child.children['!label'].cget('text')[3:])
+                if child_index > index:
+                    child.grid(row=child_index)
 
 
 class MainFrame(ttk.Frame):
@@ -116,8 +117,6 @@ class MainFrame(ttk.Frame):
         self.base_parameters.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
         self.mic_parameters.grid(column=0, row=1, sticky=tk.W, padx=5, pady=5)
         self.src_parameters.grid(column=0, row=2, sticky=tk.W, padx=5, pady=5)
-
-
 
 
 class App(tk.Tk):

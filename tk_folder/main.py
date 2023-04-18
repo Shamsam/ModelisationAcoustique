@@ -5,7 +5,8 @@ import sounddevice as sd
 from readaudio import process_audio_with_rir
 import soundfile as sf
 from readaudio import read_audio_file
-
+from tkinter import messagebox
+import numpy as np
 
 class SharedData:
     def __init__(self):
@@ -16,6 +17,8 @@ class SharedData:
         self.microphone_data = {}
         self.source_data = {}
         self.file_path = tk.StringVar(name="file_path", value="")
+        self.audio_data = tk.StringVar(name="audio_data", value="")
+        self.fs = tk.IntVar(name="fs", value=16000)
 
 
 class BaseParameters(ttk.Frame):
@@ -160,15 +163,24 @@ class FileFrame(ttk.Frame):
     def select_file(self):
         self.file_path.set(filedialog.askopenfilename())
         self.shared_data.file_path.set(self.file_path.get())
-        # Read the audio file and store the data and sample rate in shared_data
-        audio_data, fs = read_audio_file(self.file_path.get())
+        audio_data = read_audio_file(self.file_path.get())
         self.shared_data.audio_data = audio_data
-        self.shared_data.fs = fs
+        self.shared_data.fs = 16000
+
     
     def play_audio(self):
         if self.file_path.get() != "No file selected":
-            sd.play(self.shared_data.audio_data, self.shared_data.fs)
-            sd.wait()
+            try:
+                print('Playing audio...')
+                audio_data = (self.shared_data.audio_data)
+                sd.play(audio_data, self.shared_data.fs)
+                sd.wait()
+                print('Audio played!')
+            except Exception as e:
+                print(e)
+        else:
+            messagebox.showerror("Error", "No file selected")
+
 
 
 class CalculationsParameters(ttk.Frame):
@@ -223,7 +235,8 @@ class CalculationsParameters(ttk.Frame):
             self.update_status('Audio processed!')
         except Exception as e:
             self.update_status(f'Error processing audio!')
-            print(e) 
+            print(e)
+# show viewport 
 
     def play_audio(self):
         try:

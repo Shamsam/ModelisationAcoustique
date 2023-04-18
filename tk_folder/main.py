@@ -4,6 +4,7 @@ from tkinter import filedialog
 import sounddevice as sd
 from readaudio import process_audio_with_rir
 import soundfile as sf
+from readaudio import read_audio_file
 
 
 class SharedData:
@@ -15,7 +16,6 @@ class SharedData:
         self.microphone_data = {}
         self.source_data = {}
         self.file_path = tk.StringVar(name="file_path", value="")
-        self.file_output_path = tk.StringVar(name="file_output_path", value="")
 
 
 class BaseParameters(ttk.Frame):
@@ -154,10 +154,21 @@ class FileFrame(ttk.Frame):
         self.file_path_label.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
         self.file_btn = ttk.Button(self, text="Select file", command=self.select_file)
         self.file_btn.grid(column=1, row=0, sticky=tk.W, padx=5, pady=5)
+        self.play_btn = ttk.Button(self, text="Play", command=self.play_audio)
+        self.play_btn.grid(column=2, row=0, sticky=tk.W, padx=5, pady=5)
 
     def select_file(self):
         self.file_path.set(filedialog.askopenfilename())
         self.shared_data.file_path.set(self.file_path.get())
+        # Read the audio file and store the data and sample rate in shared_data
+        audio_data, fs = read_audio_file(self.file_path.get())
+        self.shared_data.audio_data = audio_data
+        self.shared_data.fs = fs
+    
+    def play_audio(self):
+        if self.file_path.get() != "No file selected":
+            sd.play(self.shared_data.audio_data, self.shared_data.fs)
+            sd.wait()
 
 
 class CalculationsParameters(ttk.Frame):

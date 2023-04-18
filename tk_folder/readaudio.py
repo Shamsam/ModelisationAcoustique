@@ -13,7 +13,7 @@ def apply_rir_to_audio(audio, rir):
         return signal.convolve(audio, rir, mode="full")
 
 
-def process_audio_with_rir(audio_file_path, room_dim, absorption, max_order, mic_positions, src_positions, progress_callback=None, status_callback=None):
+def process_audio_with_rir(audio_file_path=str, room_dim=list, absorption=float, max_order=int, mic_positions=dict, src_positions=dict, progress_callback=None, status_callback=None):
     '''Process audio file with room impulse response
     
     Parameters
@@ -39,25 +39,44 @@ def process_audio_with_rir(audio_file_path, room_dim, absorption, max_order, mic
     '''
     if status_callback:
         status_callback("Reading audio file")
-        progress_callback(5)
-    audio_signal = read_audio_file(audio_file_path)
+        progress_callback(0)
 
+    try:
+        audio_signal = read_audio_file(audio_file_path)
+    except Exception as e:
+        print(e)
+        return None, None
+    
     if status_callback:
         status_callback("Computing room impulse response")
-        progress_callback(40)
-    room = compute_rir(room_dim, absorption, max_order, mic_positions, src_positions)
+        progress_callback(10)
+
+    try:
+        room = compute_rir(room_dim, absorption, max_order, mic_positions, src_positions)
+    except Exception as e:
+        print(e)
+        return None, None
 
     if status_callback:
         status_callback("Calculating combined room impulse response")
-        progress_callback(70)
-    comb_imp_responses = calculate_responses(room, mic_positions, src_positions, norm=True, freqresp=False)
-    combined_rir = comb_imp_responses["mic_1"]
+        progress_callback(50)
 
+    try:    
+        comb_imp_responses = calculate_responses(room, mic_positions, src_positions, norm=True, freqresp=False)
+        combined_rir = comb_imp_responses["mic_1"]
+    except Exception as e:
+        print(e)
+        return None, None
+    
     if status_callback:
-        progress_callback(90)
+        progress_callback(70)
         status_callback("Applying room impulse response to audio")
-    processed_audio = apply_rir_to_audio(audio_signal, combined_rir)
-
+    try:
+        processed_audio = apply_rir_to_audio(audio_signal, combined_rir)
+    except Exception as e:
+        print(e)
+        return None, None
+    
     if progress_callback:
         progress_callback(100)  # Set progress to 100% when calculations are complete
 

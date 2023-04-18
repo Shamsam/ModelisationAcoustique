@@ -3,7 +3,6 @@ import tkinter.ttk as ttk
 from tkinter import filedialog
 import sounddevice as sd
 from readaudio import process_audio_with_rir
-from playsound import playsound
 import soundfile as sf
 
 
@@ -181,6 +180,7 @@ class CalculationsParameters(ttk.Frame):
 
     
     def get_vars(self):
+        print('reading vars...')
         self.shared_data.absorption.set(round(self.shared_data.absorption.get(), 2))
         self.mic_data = {}
         self.src_data = {}
@@ -193,7 +193,7 @@ class CalculationsParameters(ttk.Frame):
         self.abs = self.shared_data.absorption.get()
         self.max_reflection_order = self.shared_data.max_reflection_order.get()
         self.file_path = self.shared_data.file_path.get()
-        print('retreived vars!')
+        print('Retreived vars!')
 
     def update_progress(self, value):
         self.progress['value'] = value
@@ -203,15 +203,25 @@ class CalculationsParameters(ttk.Frame):
         self.status_text.set(status)
 
     def process_audio(self):
-        processed_audio, sample_rate = process_audio_with_rir(self.file_path, self.mic_data, self.src_data, self.room_dim, self.abs, self.max_reflection_order, progress_callback=self.update_progress, status_callback=self.update_status)
-        sf.write('processed.wav', processed_audio, sample_rate)
-        self.update_status('Done!') 
+        print('processing audio...')
+        try:
+            processed_audio, sample_rate = process_audio_with_rir(self.file_path, self.room_dim, self.abs, self.max_reflection_order, self.mic_data, self.src_data, progress_callback=self.update_progress, status_callback=self.update_status)
+
+            sf.write('processed.wav', processed_audio, sample_rate)
+            self.update_status('Audio processed!')
+        except Exception as e:
+            self.update_status(f'Error processing audio!')
+            print(e) 
 
     def play_audio(self):
-        
-        self.update_status('Playing audio...')
-        playsound('processed.wav')
-        self.update_status('Done!')
+        try:
+            self.update_status('Playing audio...')
+            audio, sample_rate = sf.read('processed.wav')
+            sd.play(audio, sample_rate)
+            sd.wait()
+            self.update_status('Audio played!')
+        except Exception as e:
+            self.update_status(f'Error playing audio: {e}')
 
 class MainFrame(ttk.Frame):
     def __init__(self, container, shared_data):

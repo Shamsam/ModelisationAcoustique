@@ -1,127 +1,253 @@
 import tkinter as tk
-from tkinter import ttk
-from functools import partial
+import tkinter.ttk as ttk
+from tkinter import filedialog
+import sounddevice as sd
+from readaudio import process_audio_with_rir
+from playsound import playsound
+import soundfile as sf
+
 
 
 class SharedData:
     def __init__(self):
-        self.mic_data = {}
-        self.src_data = {}
+        self.absorption = tk.DoubleVar(name="absorption_var", value=0.5)
+        self.max_reflection_order = tk.IntVar(name="max_reflection_order_var", value=3)
+        self.room_dimensions = (tk.DoubleVar(name="x", value=5), tk.DoubleVar(name="y", value=5), tk.DoubleVar(name="z", value=5))
+
+        self.microphone_data = {}
+        self.source_data = {}
+        self.file_path = tk.StringVar(name="file_path", value="")
+        self.file_output_path = tk.StringVar(name="file_output_path", value="")
 
 
 class BaseParameters(ttk.Frame):
-    def __init__(self, container):
+    def __init__(self, container, shared_data):
         super().__init__(container)
+        self.abs_data = shared_data.absorption
+        self.max_ref_data = shared_data.max_reflection_order
+        self.room_dim_data = shared_data.room_dimensions
+        self.create_scale("Absorption", self.abs_data, 0)
+        self.create_widgets("Max reflection order", self.max_ref_data, 1)
+        self.create_room_dim_widget("Room dimensions", self.room_dim_data, 2)
 
-        base_parameters = ["Room dimensions", "Absorption", "Maximum reflection order"]
-        self.base_vars = [tk.StringVar() for _ in range(len(base_parameters))]
+    def create_scale(self, text, variable, row):
+        label = ttk.Label(self, text=text)
+        label.grid(column=0, row=row, sticky=tk.W, padx=5, pady=5)
+        scale = ttk.Scale(self, from_=0, to=1, variable=variable, orient=tk.HORIZONTAL, length=120)
+        scale.grid(column=1, row=row, sticky=tk.W)
+        variable_value = round(variable.get(), 2)
+        variable.set(variable_value)
+        ticklabel = ttk.Label(self, text=variable_value, width=4)
+        ticklabel.grid(column=2, row=row, sticky=tk.W)
 
-        for index, text in enumerate(base_parameters):
-            ttk.Label(self, text=text).grid(column=0, row=index, sticky=tk.W, padx=5, pady=5)
-            entry = ttk.Entry(self, textvariable=self.base_vars[index])
-            entry.grid(column=1, row=index, sticky=tk.W)
+        def update_ticklabel(*args):
+            ticklabel.configure(text=round(variable.get(), 2))
+
+        variable.trace_add("write", update_ticklabel)
+
+        
+    def create_widgets(self, text, variable, row):
+        label = ttk.Label(self, text=text)
+        label.grid(column=0, row=row, sticky=tk.W, padx=5, pady=5)
+        entry = ttk.Entry(self, textvariable=variable)
+        entry.grid(column=1, row=row, sticky=tk.W)
+
+    def create_room_dim_widget(self, text, variables, row):
+        label = ttk.Label(self, text=text)
+        label.grid(column=0, row=row, sticky=tk.W, padx=5, pady=5)
+        self.room_dim_frame = ttk.Frame(self)
+        self.room_dim_frame.grid(column=1, row=row, sticky=tk.W)
+        for i, var in enumerate(variables):
+            entry = ttk.Entry(master=self.room_dim_frame, textvariable=var, width=6)
+            entry.grid(column=i, row=0, sticky=tk.W) 
 
 
-class DynamicParameters(ttk.Frame):
-    def __init__(self, container, param_type, shared_data, dictionnary):
+class MicParameters(ttk.Frame): 
+    def __init__(self, container, shared_data):
         super().__init__(container)
-        self.param_type = param_type
-        self.shared_data = shared_data
-        self.dictionnary = dictionnary
-        self.add_param_btn = ttk.Button(self, text=f"+ {param_type}", command=self.add_param)
+        self.mic_data = shared_data.microphone_data
+        self.add_param_btn = ttk.Button(self, text="+ Mic", command=self.add_param)
         self.add_param_btn.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
 
     def add_param(self):
-        index = len(self.shared_data.mic_data) if self.param_type == "Mic" else len(self.shared_data.src_data)
-        text = f"{self.param_type} {index + 1}"
-        label = ttk.Label(self, text=text)
-        label.grid(column=0, row=index + 1, sticky=tk.W, padx=5, pady=5)
-        new_var = tk.StringVar()
-        entry = ttk.Entry(self, textvariable=new_var)
-        entry.grid(column=1, row=index + 1, sticky=tk.W)
-        btn = ttk.Button(self, text="X")
-        btn.configure(command=partial(self.delete_row, label, entry, btn))
-        btn.grid(column=2, row=index + 1, sticky=tk.W, padx=5)
+        index = 0
+        while f'mic{index}' in self.mic_data:
+            index += 1
 
-        if self.param_type == "Mic":
-            self.shared_data.mic_data[text] = new_var
-        else:
-            self.shared_data.src_data[text] = new_var
+        self.mic_data[f'mic{index}'] = (tk.DoubleVar(name=f"mic{index}_x", value=2), tk.DoubleVar(name=f"mic{index}_y", value=2), tk.DoubleVar(name=f"mic{index}_z", value=2))
+        self.create_mic_widget(f"mic{index}", self.mic_data[f'mic{index}'], index + 1)
 
-        self.dictionnary.update_display()
+    def create_mic_widget(self, text, variables, row):
+        self.mic_grid = ttk.Frame(self)
+        self.mic_grid.grid(column=0, row=row, sticky=tk.W)
+        label = ttk.Label(self.mic_grid, text=text)
+        label.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
+        mic_frame = ttk.Frame(self.mic_grid)
+        mic_frame.grid(column=1, row=0, sticky=tk.W)
+        for i, var in enumerate(variables):
+            entry = ttk.Entry(master=mic_frame, textvariable=var, width=6)
+            entry.grid(column=i, row=0, sticky=tk.W)
+        btn = ttk.Button(self.mic_grid, text="X", command=lambda: self.remove_param(text))
+        btn.grid(column=2, row=0, sticky=tk.W, padx=5, pady=5)
+    
+    def remove_param(self, text):
+        index = int(text[3:])
+        self.mic_data.pop(text)
 
-    def delete_row(self, label, entry, btn):
-        text = label.cget("text")
-        if self.param_type == "Mic":
-            del self.shared_data.mic_data[text]
-        else:
-            del self.shared_data.src_data[text]
+        frame_to_remove = self.grid_slaves(row=index + 1, column=0)[0]
+        frame_to_remove.destroy()
 
-        self.dictionnary.update_display()
-
-        label.grid_forget()
-        entry.grid_forget()
-        btn.grid_forget()
-
-
-class DynamicDictionnary(ttk.Frame):
-    def __init__(self, container, param_type, shared_data):
-        super().__init__(container)
-        self.param_type = param_type
-        self.shared_data = shared_data
-        self.update_display()
-
-    def update_display(self):
         for child in self.winfo_children():
-            child.destroy()
-
-        data_vars = self.shared_data.mic_data.values() if self.param_type == "Mic" else self.shared_data.src_data.values()
-        for index, data_var in enumerate(data_vars):
-            label = ttk.Label(self, text=f"{self.param_type} {index + 1}")
-            label.grid(column=0, row=index, sticky=tk.W, padx=5, pady=5)
-            entry = ttk.Label(self, textvariable=data_var)
-            entry.grid(column=1, row=index, sticky=tk.W)
+            if isinstance(child, ttk.Frame) and child != self.mic_grid:
+                child_index = int(child.children['!label'].cget('text')[3:])
+                if child_index > index:
+                    child.grid(row=child_index)
 
 
-class RoomParametersFrame(ttk.Frame):
-    def __init__(self, container):
+class SrcParameters(ttk.Frame):
+    def __init__(self, container, shared_data):
         super().__init__(container)
-        ttk.Label(self, text="Room Parameters").grid(column=0, row=0, padx=10, pady=10)
-        BaseParameters(self).grid(column=0, row=1, sticky=tk.W)
+        self.src_data = shared_data.source_data
+        self.add_param_btn = ttk.Button(self, text="+ Src", command=self.add_param)
+        self.add_param_btn.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
 
+    def add_param(self):
+        index = 0
+        while f'src{index}' in self.src_data:
+            index += 1
 
-class DictionnaryFrame(ttk.Frame):
-    def __init__(self, container, param_type, shared_data):
+        self.src_data[f'src{index}'] = (tk.DoubleVar(name=f"src{index}_x", value=4), tk.DoubleVar(name=f"src{index}_y", value=4), tk.DoubleVar(name=f"src{index}_z", value=4))
+        self.create_src_widget(f"src{index}", self.src_data[f'src{index}'], index + 1)
+
+    def create_src_widget(self, text, variables, row):
+        self.src_grid = ttk.Frame(self)
+        self.src_grid.grid(column=0, row=row, sticky=tk.W)
+        label = ttk.Label(self.src_grid, text=text)
+        label.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
+        src_frame = ttk.Frame(self.src_grid)
+        src_frame.grid(column=1, row=0, sticky=tk.W)
+        for i, var in enumerate(variables):
+            entry = ttk.Entry(master=src_frame, textvariable=var, width=6)
+            entry.grid(column=i, row=0, sticky=tk.W)
+        btn = ttk.Button(self.src_grid, text="X", command=lambda: self.remove_param(text))
+        btn.grid(column=2, row=0, sticky=tk.W, padx=5, pady=5)
+    
+    def remove_param(self, text):
+        index = int(text[3:])
+        self.src_data.pop(text)
+
+        frame_to_remove = self.grid_slaves(row=index + 1, column=0)[0]
+        frame_to_remove.destroy()
+
+        for child in self.winfo_children():
+            if isinstance(child, ttk.Frame) and child != self.src_grid:
+                child_index = int(child.children['!label'].cget('text')[3:])
+                if child_index > index:
+                    child.grid(row=child_index)
+
+class FileFrame(ttk.Frame):
+    def __init__(self, container, shared_data):
         super().__init__(container)
-        ttk.Label(self, text=f"{param_type} Dictionnary").grid(column=0, row=0, padx=10, pady=10)
-        dictionnary = DynamicDictionnary(self, param_type, shared_data)
-        dictionnary.grid(column=0, row=1, sticky=tk.W)
-        DynamicParameters(self, param_type, shared_data, dictionnary).grid(column=0, row=2, sticky=tk.W)
+        self.shared_data = shared_data
+        self.file_path = tk.StringVar()
+        self.file_path.set("No file selected")
+        self.file_path_label = ttk.Label(self, textvariable=self.file_path)
+        self.file_path_label.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
+        self.file_btn = ttk.Button(self, text="Select file", command=self.select_file)
+        self.file_btn.grid(column=1, row=0, sticky=tk.W, padx=5, pady=5)
 
+    def select_file(self):
+        self.file_path.set(filedialog.askopenfilename())
+        self.shared_data.file_path.set(self.file_path.get())
+
+class CalculationsParameters(ttk.Frame):
+    def __init__(self, container, shared_data):
+        super().__init__(container)
+        self.shared_data = shared_data
+        self.set_parameters_btn = ttk.Button(self, text="Set Parameters", command=self.get_vars, width=30)
+        self.set_parameters_btn.grid(column=0, row=0, sticky=tk.N, padx=5, pady=5)
+        self.calculate_btn = ttk.Button(self, text="Calculate", command=self.process_audio, width=30)
+        self.calculate_btn.grid(column=0, row=1, sticky=tk.N, padx=5, pady=5)
+
+        self.progress = ttk.Progressbar(self, orient=tk.HORIZONTAL, length=300, mode='determinate')
+        self.progress.grid(column=0, row=2, padx=5, pady=5)
+
+        self.status_text = tk.StringVar()
+        self.status_label = ttk.Label(self, textvariable=self.status_text)
+        self.status_label.grid(column=0, row=3, padx=5, pady=5)
+
+        self.play_btn = ttk.Button(self, text="Play", command=self.play_audio, width=30)
+        self.play_btn.grid(column=0, row=4, sticky=tk.N, padx=5, pady=5)
+
+    
+    def get_vars(self):
+        self.shared_data.absorption.set(round(self.shared_data.absorption.get(), 2))
+        self.mic_data = {}
+        self.src_data = {}
+        for key, value in self.shared_data.microphone_data.items():
+            self.mic_data[key] = [value[0].get(), value[1].get(), value[2].get()]
+        for key, value in self.shared_data.source_data.items():
+            self.src_data[key] = [value[0].get(), value[1].get(), value[2].get()]
+
+        self.room_dim = [self.shared_data.room_dimensions[0].get(), self.shared_data.room_dimensions[1].get(), self.shared_data.room_dimensions[2].get()]
+        self.abs = self.shared_data.absorption.get()
+        self.max_reflection_order = self.shared_data.max_reflection_order.get()
+        self.file_path = self.shared_data.file_path.get()
+        print('retreived vars!')
+
+    def update_progress(self, value):
+        self.progress['value'] = value
+        self.update_idletasks()
+
+    def update_status(self, status):
+        self.status_text.set(status)
+
+    def process_audio(self):
+        processed_audio, sample_rate = process_audio_with_rir(self.file_path, self.mic_data, self.src_data, self.room_dim, self.abs, self.max_reflection_order, progress_callback=self.update_progress, status_callback=self.update_status)
+        sf.write('processed.wav', processed_audio, sample_rate)
+        self.update_status('Done!') 
+
+    def play_audio(self):
+        
+        self.update_status('Playing audio...')
+        playsound('processed.wav')
+        self.update_status('Done!')
 
 class MainFrame(ttk.Frame):
-    def __init__(self, container):
+    def __init__(self, container, shared_data):
         super().__init__(container)
-        self.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
-        self.create_widgets()
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(0, weight=1)
-
-    def create_widgets(self):
-        shared_data = SharedData()
-        
-        RoomParametersFrame(self).grid(column=0, row=0, sticky=tk.W)
-        DictionnaryFrame(self, "Mic", shared_data).grid(column=1, row=0, sticky=tk.W)
-        DictionnaryFrame(self, "Src", shared_data).grid(column=1, row=1, sticky=tk.W)
+        self.shared_data = shared_data
+        self.base_parameters = BaseParameters(self, self.shared_data)
+        self.mic_parameters = MicParameters(self, self.shared_data)
+        self.src_parameters = SrcParameters(self, self.shared_data)
+        self.file_frame = FileFrame(self, self.shared_data)
+        self.calculations_parameters = CalculationsParameters(self, self.shared_data)
+        self.base_parameters.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
+        self.mic_parameters.grid(column=0, row=1, sticky=tk.W, padx=5, pady=5)
+        self.src_parameters.grid(column=0, row=2, sticky=tk.W, padx=5, pady=5)
+        self.file_frame.grid(column=1, row=0, sticky=tk.W, padx=5, pady=5)
+        self.calculations_parameters.grid(column=1, row=1, sticky=tk.W, padx=5, pady=5)
 
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title('Main Frame')
-        self.geometry('800x600')
+        self.title("Test")
+        self.geometry("610x500")
+        self.shared_data = SharedData()
+        self.main_frame = MainFrame(self, self.shared_data)
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    def wait(self):
+        self.wait_var = tk.StringVar()
+        self.wait_var.set('wait')
+        self.wait_window()
+
+    def on_close(self):
+        self.wait_var.set('closed')
+        self.quit()
 
 if __name__ == "__main__":
     app = App()
-    MainFrame(app)
-    app.mainloop()
+    app.wait()

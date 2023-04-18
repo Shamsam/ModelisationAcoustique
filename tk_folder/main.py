@@ -256,7 +256,7 @@ class App(tk.Tk):
 
     def on_close(self):
         self.wait_var.set('closed')
-        self.quit()
+        self.destroy()
 
 if __name__ == "__main__":
     app = App()

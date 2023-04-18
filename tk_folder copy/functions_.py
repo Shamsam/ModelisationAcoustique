@@ -64,57 +64,38 @@ def compute_rir(room_dim, absorption, max_order: int, mic_positions: dict, src_p
 
 
     room.compute_rir()
+
     return room
 
-def calculate_responses(room: pra.ShoeBox, mic_positions: dict, src_positions: dict, norm: bool = True, freqresp: bool = True):
-    """Compute the frequency response of the room impulse response.\n
+
+def calculate_responses(room: pra.ShoeBox, mic_positions: dict, src_positions: dict):
+    """Calculate the room impulse responses of the room.\n
     **NOT OFFICIAL pyroomacoustics function**
 
     Parameters
     ----------
-    room : pyroomacoustics.ShoeBox
+    room : pyroomacoustics.Room
         The room object.
-        Access the room impulse response: room.rir[mic_idx][src_idx]
     mic_positions : dict
         The microphone positions.
         format: {"mic_1": [x1, y1, z1], "mic_2": [x2, y2, z2], ...}
     src_positions : dict
         The source positions.
         format: {"src_1": [x1, y1, z1], "src_2": [x2, y2, z2], ...}
-    norm : bool, optional
-        Normalize the combined room impulse response, by default True
-    freqresp : bool, optional
-        Compute the frequency response of the combined room impulse response, by default True
-
+    
     Returns
     -------
-    freq_responses : dict
-        The dict of frequency responses.
-        format: {"mic_1": (freq, response), "mic_2": (freq, response), ...}
-        to access the frequency response in loops: freq_responses[f"mic_{mic_idx + 1}"]
-    comb_imp_responses : dict
-        The dict of combined and normalized room impulse responses.
-        format: {"mic_1": combined_rir, "mic_2": combined_rir, ...}
-        to access the combined room impulse response in loops: comb_imp_responses[f"mic_{mic_idx + 1}"]
-    
+    rir_responses : dict
+        The dict of room impulse responses.
+        format: {"mic_1": [rir_1, rir_2, ...], "mic_2": [rir_1, rir_2, ...], ...}
+
     """
-    comb_imp_responses = {}
-    freq_responses = {}
+
+    rir_responses = {}
     for mic_idx in range(len(mic_positions)):
-        max_rir_len = max(len(room.rir[mic_idx][src_idx]) for src_idx in range(len(src_positions))) 
-        combined_rir = sum(np.resize(room.rir[mic_idx][src_idx], max_rir_len) for src_idx in range(len(src_positions)))
-        if norm: 
-            combined_rir /= max(combined_rir)
-        if freqresp:
-            freq, response = freq_resp(room, combined_rir) 
-            freq_responses[f"mic_{mic_idx + 1}"] = (freq, response)
-        else:
-            comb_imp_responses[f"mic_{mic_idx + 1}"] = combined_rir
-    if freqresp:
-        return freq_responses
-    else:
-        return comb_imp_responses
-# plot the frequency response with matplotlib
+        rir_responses[f"mic_{mic_idx + 1}"] = [room.rir[mic_idx][src_idx] for src_idx in range(len(src_positions))]
+    return rir_responses
+
 def plot_freq_response(freq_responses: dict, mic_positions: dict):
     """Plot the frequency response of the room impulse response.\n
     **NOT OFFICIAL pyroomacoustics function**

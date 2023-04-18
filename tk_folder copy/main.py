@@ -6,7 +6,6 @@ from readaudio import process_audio_with_rir
 import soundfile as sf
 from readaudio import read_audio_file
 from tkinter import messagebox
-import numpy as np
 
 class SharedData:
     def __init__(self):
@@ -201,6 +200,9 @@ class CalculationsParameters(ttk.Frame):
         self.play_btn = ttk.Button(self, text="Play", command=self.play_audio, width=30)
         self.play_btn.grid(column=0, row=4, sticky=tk.N, padx=5, pady=5)
 
+        self.simulate_btn = ttk.Button(self, text="Simulate", command=self.simulate, width=30)
+        self.simulate_btn.grid(column=0, row=5, sticky=tk.N, padx=5, pady=5)
+
     
     def get_vars(self):
         print('reading vars...')
@@ -228,14 +230,12 @@ class CalculationsParameters(ttk.Frame):
     def process_audio(self):
         print('processing audio...')
         try:
-            processed_audio, sample_rate = process_audio_with_rir(self.file_path, self.room_dim, self.abs, self.max_reflection_order, self.mic_data, self.src_data, progress_callback=self.update_progress, status_callback=self.update_status)
-
+            processed_audio, sample_rate, rir_responses = process_audio_with_rir(self.file_path, self.room_dim, self.abs, self.max_reflection_order, self.mic_data, self.src_data, progress_callback=self.update_progress, status_callback=self.update_status)
             sf.write('processed.wav', processed_audio, sample_rate)
             self.update_status('Audio processed!')
         except Exception as e:
             self.update_status(f'Error processing audio!')
             print(e)
-
 
     def play_audio(self):
         try:
@@ -246,6 +246,7 @@ class CalculationsParameters(ttk.Frame):
             self.update_status('Audio played!')
         except Exception as e:
             self.update_status(f'Error playing audio: {e}')
+            print(e)
 
 
 class MainFrame(ttk.Frame):

@@ -143,4 +143,3 @@ def plot_freq_response(freq_responses: dict, mic_positions: dict):
         freq_plots.append(plt.plot(freq, 20 * np.log10(np.abs(response)), label=f"mic_{mic_idx + 1}"))
         
     return freq_plots
-    

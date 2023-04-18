@@ -6,7 +6,6 @@ from readaudio import process_audio_with_rir
 import soundfile as sf
 
 
-
 class SharedData:
     def __init__(self):
         self.absorption = tk.DoubleVar(name="absorption_var", value=0.5)
@@ -144,6 +143,7 @@ class SrcParameters(ttk.Frame):
                 if child_index > index:
                     child.grid(row=child_index)
 
+
 class FileFrame(ttk.Frame):
     def __init__(self, container, shared_data):
         super().__init__(container)
@@ -158,6 +158,7 @@ class FileFrame(ttk.Frame):
     def select_file(self):
         self.file_path.set(filedialog.askopenfilename())
         self.shared_data.file_path.set(self.file_path.get())
+
 
 class CalculationsParameters(ttk.Frame):
     def __init__(self, container, shared_data):
@@ -222,6 +223,7 @@ class CalculationsParameters(ttk.Frame):
             self.update_status('Audio played!')
         except Exception as e:
             self.update_status(f'Error playing audio: {e}')
+
 
 class MainFrame(ttk.Frame):
     def __init__(self, container, shared_data):

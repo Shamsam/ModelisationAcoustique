@@ -81,5 +81,3 @@ def process_audio_with_rir(audio_file_path=str, room_dim=list, absorption=float,
         progress_callback(100)  # Set progress to 100% when calculations are complete
 
     return processed_audio, room.fs
-
-

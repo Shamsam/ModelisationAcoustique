@@ -6,6 +6,8 @@ from readaudio import process_audio_with_rir
 import soundfile as sf
 from readaudio import read_audio_file
 from tkinter import messagebox
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class SharedData:
     def __init__(self):
@@ -199,9 +201,6 @@ class CalculationsParameters(ttk.Frame):
 
         self.play_btn = ttk.Button(self, text="Play", command=self.play_audio, width=30)
         self.play_btn.grid(column=0, row=4, sticky=tk.N, padx=5, pady=5)
-
-        self.simulate_btn = ttk.Button(self, text="Simulate", command=self.simulate, width=30)
-        self.simulate_btn.grid(column=0, row=5, sticky=tk.N, padx=5, pady=5)
 
     
     def get_vars(self):

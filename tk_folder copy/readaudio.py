@@ -2,7 +2,7 @@ import numpy as np
 import librosa
 from scipy import signal
 from functions_ import compute_rir, calculate_responses
-from plotting_fcts import plot_rir
+from plotting_fcts import plot_rir, plotting_buttons_window
 
 def read_audio_file(file_path, sample_rate=16000):
     audio, _ = librosa.load(file_path, sr=sample_rate, mono=True)
@@ -51,8 +51,7 @@ def process_audio_with_rir(audio_file_path=str, room_dim=list, absorption=float,
         progress_callback(60)
     
     try:
-        for rir, src in zip(mic_rirs, src_positions.keys()):
-            plot_rir(rir, room.fs, src)
+        plotting_buttons_window(room)
     except Exception as e:
         print(e)
         return None, None

@@ -4,6 +4,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 from scipy.signal import stft
 import pyroomacoustics as pra
+from scipy.signal import freqz
 
 def plotting_buttons_window(room: pra.Room):
     """Create a new window for the plotting buttons.
@@ -45,6 +46,8 @@ def plot_rir(room: pra.Room, mic: int, max_rir_len: int):
         Access the room impulse response: room.rir[mic_idx][src_idx]
     mic : int
         The microphone index.
+    max_rir_len : int
+        The maximum length of the room impulse response.
 
     Returns
     -------
@@ -68,14 +71,14 @@ def plot_rir(room: pra.Room, mic: int, max_rir_len: int):
             # pad the rir with zeros if it is shorter than the longest rir
             if len(room.rir[mic][src_idx]) < max_rir_len:
                 room.rir[mic][src_idx] = np.pad(room.rir[mic][src_idx], (0, max_rir_len - len(room.rir[mic][src_idx])), 'constant')
-            ax.plot(t, room.rir[mic][src_idx], label="Source " + str(src_idx + 1))
+            ax.plot(t, room.rir[mic][src_idx], label="Source " + str(src_idx))
     except Exception as e:
         print(e)
         print('Error in plotting the room impulse response')
 
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Amplitude")
-    ax.set_title("Room Impulse Response of mic" + str(mic + 1))
+    ax.set_title("Room Impulse Response of mic" + str(mic))
     ax.legend()
     # Create a canvas for the plot and add it to the window
     canvas = FigureCanvasTkAgg(fig, master=plot_window)
@@ -91,6 +94,8 @@ def plot_freq_resp(room: pra.Room, max_rir_len: int):
     room : pyroomacoustics.Room
         The room object and its properties.
         Access the room impulse response: room.rir[mic_idx][src_idx]
+    max_rir_len : int
+        The maximum length of the room impulse response.
 
     Returns
     -------
@@ -110,20 +115,18 @@ def plot_freq_resp(room: pra.Room, max_rir_len: int):
     # Plot the frequency response on the axes
         for src_idx, source in enumerate(room.sources):
             if len(room.rir[0][src_idx]) < max_rir_len:
-                print('The rir is shorter than the longest rir')
                 room.rir[0][src_idx] = np.pad(room.rir[0][src_idx], (0, max_rir_len - len(room.rir[0][src_idx])), 'constant')
-                print('Padded the rir with zeros')
             print('Computing the frequency response...')
-            f, t, Zxx = stft(room.rir[0][src_idx], room.fs, nperseg=256, noverlap=128)
-            print('Done!')
-            ax.pcolormesh(t, f, np.abs(Zxx), cmap='viridis', shading='gouraud', label="Source " + str(src_idx + 1))
-
+            rir = room.rir[0][src_idx] / np.max(np.abs(room.rir[0][src_idx]))
+            freq, resp = freqz(rir)
+            freq = freq / (2 * np.pi) * room.fs
+            ax.plot(freq, np.abs(resp), label="Source " + str(src_idx))
     except Exception as e:
         print(e)
         print('Error in plotting the frequency response')
     ax.set_xlabel("Frequency (Hz)")
     ax.set_ylabel("Amplitude")
-    ax.set_title("Frequency Response of mic1")
+    ax.set_title("Frequency Response of mic0")
     ax.legend()
 
     # Create a canvas for the plot and add it to the window
@@ -135,7 +138,7 @@ def plot_freq_resp(room: pra.Room, max_rir_len: int):
     print('Done!')
 
 
-def plot_spectrogram(room: pra.Room, max_rir_len: int, nperseg=256, noverlap=None, cmap='viridis'):
+def plot_spectrogram(room: pra.Room, max_rir_len: int, nperseg=256, noverlap=None, cmap='inferno'):
     """
     Plots spectrograms for each source-microphone pair in a pyroomacoustics room object.
 
@@ -143,13 +146,12 @@ def plot_spectrogram(room: pra.Room, max_rir_len: int, nperseg=256, noverlap=Non
     room (pyroomacoustics.room.Room): The room object with precomputed RIRs.
     nperseg (int, optional): Number of samples per segment for the STFT. Default is 256.
     noverlap (int, optional): Number of samples to overlap between segments. Default is nperseg // 2.
-    cmap (str, optional): Colormap for the spectrograms. Default is 'viridis'.
+    cmap (str, optional): Colormap for the spectrograms. Default is 'inferno'.
     """
     print('Starting...')
     if noverlap is None:
         noverlap = nperseg // 2
-    # Get number of sources and microphones
-   
+
     # Create a new window for the plot
     plot_window = tk.Toplevel()
     plot_window.title("Spectrogram")
@@ -162,15 +164,20 @@ def plot_spectrogram(room: pra.Room, max_rir_len: int, nperseg=256, noverlap=Non
             if len(room.rir[0][src_idx]) < max_rir_len:
                 room.rir[0][src_idx] = np.pad(room.rir[0][src_idx], (0, max_rir_len - len(room.rir[0][src_idx])), 'constant')
             f, t, Sxx = stft(room.rir[0][src_idx], room.fs, nperseg=nperseg, noverlap=noverlap)
-            ax.pcolormesh(t, f, 20 * np.log10(np.abs(Sxx)), cmap=cmap, shading='gouraud')
+            pcm = ax.pcolormesh(t, f, 20 * np.log10(np.abs(Sxx)), cmap=cmap, shading='gouraud')
     except Exception as e:
         print(e)
         print('Error in plotting the spectrogram')
 
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Frequency (Hz)")
-    ax.set_title("Spectrogram of mic1")
+    ax.set_yscale('log')  # use logarithmic scale for the frequency axis
+    ax.set_title("Spectrogram of mic0")
     ax.legend()
+    ax.grid(True)  # add grid lines
+
+    # Create a colorbar for the intensity scale
+    fig.colorbar(pcm, ax=ax, label="Magnitude (dB)")
 
     # Create a canvas for the plot and add it to the window
     canvas = FigureCanvasTkAgg(fig, master=plot_window)

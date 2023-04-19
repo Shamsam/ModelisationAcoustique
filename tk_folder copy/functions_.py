@@ -55,7 +55,7 @@ def compute_rir(room_dim, absorption, max_order: int, mic_positions: dict, src_p
     
     """
 
-    room = pra.ShoeBox(room_dim, fs=16000, absorption=absorption, max_order=max_order)    
+    room = pra.ShoeBox(room_dim, fs=16000, absorption=absorption, max_order=max_order, ray_tracing=True, use_rand_ism=True)    
     for src_pos in src_positions.values():
         room.add_source(src_pos)
 
@@ -69,26 +69,26 @@ def compute_rir(room_dim, absorption, max_order: int, mic_positions: dict, src_p
 
 
 def calculate_responses(room: pra.ShoeBox, mic_positions: dict, src_positions: dict):
-    """Calculate the room impulse responses of the room.\n
+    """Calculate the room impulse response and the frequency response.\n
     **NOT OFFICIAL pyroomacoustics function**
 
     Parameters
     ----------
     room : pyroomacoustics.Room
-        The room object.
+        The room object and its properties.
+        Access the room impulse response: room.rir[mic_idx][src_idx]
     mic_positions : dict
         The microphone positions.
         format: {"mic_1": [x1, y1, z1], "mic_2": [x2, y2, z2], ...}
     src_positions : dict
         The source positions.
         format: {"src_1": [x1, y1, z1], "src_2": [x2, y2, z2], ...}
-    
+
     Returns
     -------
     rir_responses : dict
         The dict of room impulse responses.
         format: {"mic_1": [rir_1, rir_2, ...], "mic_2": [rir_1, rir_2, ...], ...}
-
     """
 
     rir_responses = {}
@@ -105,7 +105,6 @@ def plot_freq_response(freq_responses: dict, mic_positions: dict):
     freq_responses : dict
         The dict of frequency responses.
         format: {"mic_1": (freq, response), "mic_2": (freq, response), ...}
-        to access the frequency response in loops: freq_responses[f"mic_{mic_idx + 1}"]
     mic_positions : dict
         The microphone positions.
         format: {"mic_1": [x1, y1, z1], "mic_2": [x2, y2, z2], ...}
@@ -113,9 +112,8 @@ def plot_freq_response(freq_responses: dict, mic_positions: dict):
     Returns
     -------
     freq_plots : list
-        The list of frequency response plots.
+        The list of frequency plots.
         format: [plt.plot(freq, 20 * np.log10(np.abs(response)), label=f"mic_{mic_idx + 1}"), ...]
-    
     """
     freq_plots = []
     for mic_idx in range(len(mic_positions)):

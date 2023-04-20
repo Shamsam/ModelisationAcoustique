@@ -9,6 +9,7 @@ from tkinter import messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+
 class SharedData:
     def __init__(self):
         self.absorption = tk.DoubleVar(name="absorption_var", value=0.5)
@@ -210,7 +211,6 @@ class MicParameters(ttk.Frame):
         self.shared_data.base_parameters.update_mic_traces()
 
 
-
 class SrcParameters(ttk.Frame):
     def __init__(self, container, shared_data):
         super().__init__(container)
@@ -259,8 +259,6 @@ class SrcParameters(ttk.Frame):
         self.shared_data.base_parameters.update_src_traces()
 
 
-
-
 class FileFrame(ttk.Frame):
     def __init__(self, container, shared_data):
         super().__init__(container)
@@ -293,7 +291,6 @@ class FileFrame(ttk.Frame):
                 print(e)
         else:
             messagebox.showerror("Error", "No file selected")
-
 
 
 class CalculationsParameters(ttk.Frame):

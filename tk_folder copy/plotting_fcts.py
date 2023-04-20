@@ -33,12 +33,9 @@ def plotting_buttons_window(room: pra.Room):
     plot_spectrogram_button.pack()
 
 
-
-
-
-def plot_rir(room: pra.Room, mic: int, max_rir_len: int): 
+def plot_rir(room: pra.Room, mic: int, max_rir_len: int):
     """Plot the room impulse response.
-
+    
     Parameters
     ----------
     room : pyroomacoustics.Room
@@ -80,11 +77,14 @@ def plot_rir(room: pra.Room, mic: int, max_rir_len: int):
     ax.set_ylabel("Amplitude")
     ax.set_title("Room Impulse Response of mic" + str(mic))
     ax.legend()
+    ax.grid(True)  # add grid lines
+
     # Create a canvas for the plot and add it to the window
     canvas = FigureCanvasTkAgg(fig, master=plot_window)
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
     # Redraw the canvas to update the figure
     canvas.draw()
+
 
 def plot_freq_resp(room: pra.Room, max_rir_len: int):
     """Plot the frequency response.
@@ -110,9 +110,8 @@ def plot_freq_resp(room: pra.Room, max_rir_len: int):
     # Create a new figure and axes for the plot
     fig, ax = plt.subplots(figsize=(8, 6))
 
-
     try:
-    # Plot the frequency response on the axes
+        # Plot the frequency response on the axes
         for src_idx, source in enumerate(room.sources):
             if len(room.rir[0][src_idx]) < max_rir_len:
                 room.rir[0][src_idx] = np.pad(room.rir[0][src_idx], (0, max_rir_len - len(room.rir[0][src_idx])), 'constant')
@@ -120,14 +119,15 @@ def plot_freq_resp(room: pra.Room, max_rir_len: int):
             rir = room.rir[0][src_idx] / np.max(np.abs(room.rir[0][src_idx]))
             freq, resp = freqz(rir)
             freq = freq / (2 * np.pi) * room.fs
-            ax.plot(freq, np.abs(resp), label="Source " + str(src_idx))
+            ax.semilogx(freq, 20 * np.log10(np.abs(resp)), label="Source " + str(src_idx))
     except Exception as e:
         print(e)
         print('Error in plotting the frequency response')
     ax.set_xlabel("Frequency (Hz)")
-    ax.set_ylabel("Amplitude")
+    ax.set_ylabel("Amplitude (dB)")
     ax.set_title("Frequency Response of mic0")
     ax.legend()
+    ax.grid(True)  # add grid lines
 
     # Create a canvas for the plot and add it to the window
     canvas = FigureCanvasTkAgg(fig, master=plot_window)
@@ -136,6 +136,8 @@ def plot_freq_resp(room: pra.Room, max_rir_len: int):
     # Redraw the canvas to update the figure
     canvas.draw()
     print('Done!')
+
+
 
 
 def plot_spectrogram(room: pra.Room, max_rir_len: int, nperseg=256, noverlap=None, cmap='inferno'):

@@ -25,12 +25,15 @@ class SharedData:
 class BaseParameters(ttk.Frame):
     def __init__(self, container, shared_data):
         super().__init__(container)
+        self.shared_data = shared_data
+        shared_data.base_parameters = self
         self.abs_data = shared_data.absorption
         self.max_ref_data = shared_data.max_reflection_order
         self.room_dim_data = shared_data.room_dimensions
         self.create_scale("Absorption", self.abs_data, 0)
         self.create_widgets("Max reflection order", self.max_ref_data, 1)
         self.create_room_dim_widget("Room dimensions", self.room_dim_data, 2)
+        self.create_room_visualization()
 
     def create_scale(self, text, variable, row):
         label = ttk.Label(self, text=text)
@@ -61,12 +64,108 @@ class BaseParameters(ttk.Frame):
         self.room_dim_frame.grid(column=1, row=row, sticky=tk.W)
         for i, var in enumerate(variables):
             entry = ttk.Entry(master=self.room_dim_frame, textvariable=var, width=6)
-            entry.grid(column=i, row=0, sticky=tk.W) 
+            entry.grid(column=i, row=0, sticky=tk.W)
+        
+    def create_room_visualization(self):
+        room_visualization = tk.Toplevel()
+        room_visualization.title("Room visualization")
+        canvas_width = 1000
+        canvas_height = 500
+        max_room_size = 20  # Adjust this based on the maximum room size you expect
 
+        self.room_canvas = tk.Canvas(room_visualization, width=canvas_width, height=canvas_height)
+        self.room_canvas.pack()
+
+        def update_room_visualization(*args):
+            self.room_canvas.delete("all")
+
+            x = self.room_dim_data[0].get() * (canvas_width / 2) / max_room_size
+            y = self.room_dim_data[1].get() * (canvas_height / 2) / max_room_size
+            z = self.room_dim_data[2].get() * (canvas_height / 2) / max_room_size
+
+            # Top view
+            self.room_canvas.create_rectangle(50, 50, 50 + x, 50 + y, outline="black", fill="white", tags="top_view")
+            self.room_canvas.create_text(50 + x / 2, 40, text=f"X: {self.room_dim_data[0].get()}", tags="top_view_label")
+            self.room_canvas.create_text(30, 50 + y / 2, text=f"Y: {self.room_dim_data[1].get()}", tags="top_view_label", angle=90)
+
+            # Side view
+            self.room_canvas.create_rectangle(50 + x + 20, 50, 50 + x + 20 + x, 50 + z, outline="black", fill="white", tags="side_view")
+            self.room_canvas.create_text(50 + x + 20 + x / 2, 40, text=f"X: {self.room_dim_data[0].get()}", tags="side_view_label")
+            self.room_canvas.create_text(50 + x + 10, 50 + z / 2, text=f"Z: {self.room_dim_data[2].get()}", tags="side_view_label", angle=90)
+
+            # Draw microphones
+            for mic_vars in self.shared_data.microphone_data.values():
+                mic_x = mic_vars[0].get() * (canvas_width / 2) / max_room_size
+                mic_y = mic_vars[1].get() * (canvas_height / 2) / max_room_size
+                mic_z = mic_vars[2].get() * (canvas_height / 2) / max_room_size
+
+                # Microphone in top view
+                self.room_canvas.create_oval(50 + mic_x - 3, 50 + mic_y - 3, 50 + mic_x + 3, 50 + mic_y + 3, fill="red", tags="mic_top_view")
+
+                # Microphone in side view
+                self.room_canvas.create_oval(50 + x + 20 + mic_x - 3, 50 + mic_z - 3, 50 + x + 20 + mic_x + 3, 50 + mic_z + 3, fill="red", tags="mic_side_view")
+
+            # Draw sources
+            for src_vars in self.shared_data.source_data.values():
+                src_x = src_vars[0].get() * (canvas_width / 2) / max_room_size
+                src_y = src_vars[1].get() * (canvas_height / 2) / max_room_size
+                src_z = src_vars[2].get() * (canvas_height / 2) / max_room_size
+
+                # Source in top view
+                self.room_canvas.create_oval(50 + src_x - 3, 50 + src_y - 3, 50 + src_x + 3, 50 + src_y + 3, fill="blue", tags="src_top_view")
+
+                # Source in side view
+                self.room_canvas.create_oval(50 + x + 20 + src_x - 3, 50 + src_z - 3, 50 + x + 20 + src_x + 3, 50 + src_z + 3, fill="blue", tags="src_side_view")
+
+        for var in self.room_dim_data:
+            var.trace_add("write", update_room_visualization)
+
+        for mic_vars in self.shared_data.microphone_data.values():
+            for mic_var in mic_vars:
+                mic_var.trace_add("write", update_room_visualization)
+
+        update_room_visualization()
+
+
+        for var in self.room_dim_data:
+            var.trace_add("write", update_room_visualization)
+
+        for mic_vars in self.shared_data.microphone_data.values():
+            for mic_var in mic_vars:
+                mic_var.trace_add("write", update_room_visualization)
+
+
+        update_room_visualization()
+    
+    def update_src_traces(self):
+        for src_vars in self.shared_data.source_data.values():
+            for src_var in src_vars:
+                # Remove existing trace
+                try:
+                    src_var.trace_remove("write", src_var.trace_info()[0][1])
+                except IndexError:
+                    pass
+
+                # Add new trace
+                src_var.trace_add("write", self.update_room_visualization)
+
+    def update_mic_traces(self):
+        for mic_vars in self.shared_data.microphone_data.values():
+            for mic_var in mic_vars:
+                # Remove existing trace
+                try:
+                    mic_var.trace_remove("write", mic_var.trace_info()[0][1])
+                except IndexError:
+                    pass
+
+                # Add new trace
+                mic_var.trace_add("write", self.update_room_visualization)
+        
 
 class MicParameters(ttk.Frame): 
     def __init__(self, container, shared_data):
         super().__init__(container)
+        self.shared_data = shared_data
         self.mic_data = shared_data.microphone_data
         self.add_param_btn = ttk.Button(self, text="+ Mic", command=self.add_param)
         self.add_param_btn.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
@@ -78,6 +177,7 @@ class MicParameters(ttk.Frame):
 
         self.mic_data[f'mic{index}'] = (tk.DoubleVar(name=f"mic{index}_x", value=2), tk.DoubleVar(name=f"mic{index}_y", value=2), tk.DoubleVar(name=f"mic{index}_z", value=2))
         self.create_mic_widget(f"mic{index}", self.mic_data[f'mic{index}'], index + 1)
+        self.update_mic_traces()
 
     def create_mic_widget(self, text, variables, row):
         self.mic_grid = ttk.Frame(self)
@@ -104,11 +204,17 @@ class MicParameters(ttk.Frame):
                 child_index = int(child.children['!label'].cget('text')[3:])
                 if child_index > index:
                     child.grid(row=child_index)
+        self.update_mic_traces()
+
+    def update_mic_traces(self):
+        self.shared_data.base_parameters.update_mic_traces()
+
 
 
 class SrcParameters(ttk.Frame):
     def __init__(self, container, shared_data):
         super().__init__(container)
+        self.shared_data = shared_data
         self.src_data = shared_data.source_data
         self.add_param_btn = ttk.Button(self, text="+ Src", command=self.add_param)
         self.add_param_btn.grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
@@ -120,6 +226,7 @@ class SrcParameters(ttk.Frame):
 
         self.src_data[f'src{index}'] = (tk.DoubleVar(name=f"src{index}_x", value=4), tk.DoubleVar(name=f"src{index}_y", value=4), tk.DoubleVar(name=f"src{index}_z", value=4))
         self.create_src_widget(f"src{index}", self.src_data[f'src{index}'], index + 1)
+        self.update_src_traces()
 
     def create_src_widget(self, text, variables, row):
         self.src_grid = ttk.Frame(self)
@@ -146,6 +253,12 @@ class SrcParameters(ttk.Frame):
                 child_index = int(child.children['!label'].cget('text')[3:])
                 if child_index > index:
                     child.grid(row=child_index)
+        self.update_src_traces()
+
+    def update_src_traces(self):
+        self.shared_data.base_parameters.update_src_traces()
+
+
 
 
 class FileFrame(ttk.Frame):

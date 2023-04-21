@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk
 
-def read_audio_file(file_path, sample_rate=16000):
+def read_audio_file(file_path, sample_rate=32000):
     audio, _ = librosa.load(file_path, sr=sample_rate, mono=True)
     return audio
 
@@ -88,8 +88,8 @@ def process_audio_with_rir(audio_file_path=str, room_dim=list, absorption=float,
         window.title('Signal')
         
 
-        t2 = np.arange(0, len(audio_signal)/16000, 1/16000)
-        t1 = np.arange(0, len(processed_audio)/16000, 1/16000)
+        t2 = np.arange(0, len(audio_signal)/32000, 1/32000)
+        t1 = np.arange(0, len(processed_audio)/32000, 1/32000)
         fig = plt.figure(figsize=(10, 5))
         ax = fig.add_subplot(111)
         ax.plot(t1, processed_audio, label='Processed signal', alpha=0.5)

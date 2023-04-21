@@ -55,7 +55,7 @@ def compute_rir(room_dim, absorption, max_order: int, mic_positions: dict, src_p
     
     """
 
-    room = pra.ShoeBox(room_dim, fs=16000, absorption=absorption, max_order=max_order, ray_tracing=True, use_rand_ism=True, max_rand_disp=0.05, air_absorption=True, temperature=temperature, humidity=humidity)    
+    room = pra.ShoeBox(room_dim, fs=32000, absorption=absorption, max_order=max_order, ray_tracing=True, use_rand_ism=True, max_rand_disp=0.05, air_absorption=True, temperature=temperature, humidity=humidity)    
     for src_pos in src_positions.values():
         room.add_source(src_pos, signal=audio_signal)
 

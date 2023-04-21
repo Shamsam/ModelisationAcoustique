@@ -79,7 +79,7 @@ class BaseParameters(ttk.Frame):
         room_visualization.title("Room visualization")
         canvas_width = 1000
         canvas_height = 500
-        max_room_size = 20
+        max_room_size = 20  # Adjust this based on the maximum room size you expect
 
         self.room_canvas = tk.Canvas(room_visualization, width=canvas_width, height=canvas_height)
         self.room_canvas.pack()
@@ -93,9 +93,13 @@ class BaseParameters(ttk.Frame):
 
             # Top view
             self.room_canvas.create_rectangle(50, 50, 50 + x, 50 + y, outline="black", fill="white", tags="top_view")
+            self.room_canvas.create_text(50 + x / 2, 40, text=f"X: {self.room_dim_data[0].get()}", tags="top_view_label")
+            self.room_canvas.create_text(30, 50 + y / 2, text=f"Y: {self.room_dim_data[1].get()}", tags="top_view_label", angle=90)
 
             # Side view
             self.room_canvas.create_rectangle(50 + x + 20, 50, 50 + x + 20 + x, 50 + z, outline="black", fill="white", tags="side_view")
+            self.room_canvas.create_text(50 + x + 20 + x / 2, 40, text=f"X: {self.room_dim_data[0].get()}", tags="side_view_label")
+            self.room_canvas.create_text(50 + x + 10, 50 + z / 2, text=f"Z: {self.room_dim_data[2].get()}", tags="side_view_label", angle=90)
 
             # Draw microphones
             for mic_vars in self.shared_data.microphone_data.values():
@@ -107,7 +111,7 @@ class BaseParameters(ttk.Frame):
                 self.room_canvas.create_oval(50 + mic_x - 3, 50 + mic_y - 3, 50 + mic_x + 3, 50 + mic_y + 3, fill="red", tags="mic_top_view")
 
                 # Microphone in side view
-                self.room_canvas.create_oval(50 + x + 20 + mic_x - 3, canvas_height - (50 + mic_z - 3), 50 + x + 20 + mic_x + 3, canvas_height - (50 + mic_z + 3), fill="red", tags="mic_side_view")
+                self.room_canvas.create_oval(50 + x + 20 + mic_x - 3, 50 + mic_z - 3, 50 + x + 20 + mic_x + 3, 50 + mic_z + 3, fill="red", tags="mic_side_view")
 
             # Draw sources
             for src_vars in self.shared_data.source_data.values():
@@ -119,8 +123,7 @@ class BaseParameters(ttk.Frame):
                 self.room_canvas.create_oval(50 + src_x - 3, 50 + src_y - 3, 50 + src_x + 3, 50 + src_y + 3, fill="blue", tags="src_top_view")
 
                 # Source in side view
-                # Source in side view
-                self.room_canvas.create_oval(50 + x + 20 + src_x - 3, canvas_height - (50 + src_z - 3), 50 + x + 20 + src_x + 3, canvas_height - (50 + src_z + 3), fill="blue", tags="src_side_view")
+                self.room_canvas.create_oval(50 + x + 20 + src_x - 3, 50 + src_z - 3, 50 + x + 20 + src_x + 3, 50 + src_z + 3, fill="blue", tags="src_side_view")
 
         for var in self.room_dim_data:
             var.trace_add("write", update_room_visualization)
@@ -129,12 +132,7 @@ class BaseParameters(ttk.Frame):
             for mic_var in mic_vars:
                 mic_var.trace_add("write", update_room_visualization)
 
-        for src_vars in self.shared_data.source_data.values():
-            for src_var in src_vars:
-                src_var.trace_add("write", update_room_visualization)
-
         update_room_visualization()
-
     
     def update_src_traces(self):
         for src_vars in self.shared_data.source_data.values():

@@ -1,12 +1,15 @@
 import numpy as np
 import librosa
-from scipy import signal
 from functions_ import compute_rir, calculate_responses
 from plotting_fcts import plot_rir, plotting_buttons_window
-import pyroomacoustics as pra
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk
+import pyfftw
+from scipy.signal import stft
+import scipy.fft
+
+scipy.fft.set_backend(pyfftw.interfaces.scipy_fft)
 
 def read_audio_file(file_path, sample_rate=32000):
     audio, _ = librosa.load(file_path, sr=sample_rate, mono=True)
@@ -14,7 +17,17 @@ def read_audio_file(file_path, sample_rate=32000):
 
 
 def apply_rir_to_audio(audio, rir):
-        return signal.convolve(audio, rir, mode="full")
+    # Compute the FFT of the input signals
+    audio_fft = scipy.fft.fft(audio)
+    rir_fft = scipy.fft.fft(rir)
+
+    # Compute the product of the FFTs
+    product_fft = audio_fft * rir_fft
+
+    # Compute the inverse FFT of the product
+    result = scipy.fft.ifft(product_fft)
+
+    return result.real
 
 
 def process_audio_with_rir(audio_file_path=str, room_dim=list, absorption=float, max_order=int, mic_positions=dict, src_positions=dict, progress_callback=None, status_callback=None, temperature=float, humidity=float):

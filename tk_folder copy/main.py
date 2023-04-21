@@ -273,7 +273,7 @@ class FileFrame(ttk.Frame):
         self.shared_data.file_path.set(self.file_path.get())
         audio_data = read_audio_file(self.file_path.get())
         self.shared_data.audio_data = audio_data
-        self.shared_data.fs = 16000
+        self.shared_data.fs = 32000
 
     def play_audio(self):
         if self.file_path.get() != "No file selected":

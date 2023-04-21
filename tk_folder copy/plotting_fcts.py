@@ -2,9 +2,13 @@ import tkinter as tk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
-from scipy.signal import stft
+import pyfftw
 import pyroomacoustics as pra
-from scipy.signal import freqz
+from scipy.signal import freqz, stft
+import scipy.fft
+
+scipy.fft.set_backend(pyfftw.interfaces.scipy_fft)
+
 
 def plotting_buttons_window(room: pra.Room):
     """Create a new window for the plotting buttons.
@@ -117,9 +121,9 @@ def plot_freq_resp(room: pra.Room, max_rir_len: int):
                 room.rir[0][src_idx] = np.pad(room.rir[0][src_idx], (0, max_rir_len - len(room.rir[0][src_idx])), 'constant')
             print('Computing the frequency response...')
             rir = room.rir[0][src_idx] / np.max(np.abs(room.rir[0][src_idx]))
-            freq, resp = freqz(rir)
+            freq, resp = freqz(rir) 
             freq = freq / (2 * np.pi) * room.fs
-            ax.plot(freq, 20 * np.log10(np.abs(resp)), label="Source " + str(src_idx), alpha=0.5)
+            ax.plot(freq, 20 * np.log10(np.abs(resp)), label="Source " + str(src_idx), alpha=0.5) 
     except Exception as e:
         print(e)
         print('Error in plotting the frequency response')
@@ -152,6 +156,7 @@ def plot_spectrogram(room: pra.Room, max_rir_len: int, nperseg=256, noverlap=Non
         Length of each segment. Defaults to 256.
     noverlap : int, optional
         Number of points to overlap between segments. Defaults to None.
+        Or nperseg // 2 if noverlap is None.
     cmap : str, optional
         Colormap to use. Defaults to 'inferno'.
 
@@ -177,8 +182,12 @@ def plot_spectrogram(room: pra.Room, max_rir_len: int, nperseg=256, noverlap=Non
             # Plot the spectrogram on the axes
             if len(room.rir[0][src_idx]) < max_rir_len:
                 room.rir[0][src_idx] = np.pad(room.rir[0][src_idx], (0, max_rir_len - len(room.rir[0][src_idx])), 'constant')
+            
+            print('Computing the spectrogram...')
+            # Compute the STFT using scipy.signal.stft with pyfftw as backend
             f, t, Sxx = stft(room.rir[0][src_idx], room.fs, nperseg=nperseg, noverlap=noverlap)
-            pcm = ax.pcolormesh(t, f, 20 * np.log10(np.abs(Sxx)), cmap=cmap, shading='gouraud') # since this is a loop, we are only plotting the last source
+
+            pcm = ax.pcolormesh(t, f, 20 * np.log10(np.abs(Sxx)), cmap=cmap, shading='gouraud')
         except Exception as e:
             print(e)
             print('Error in plotting the spectrogram')

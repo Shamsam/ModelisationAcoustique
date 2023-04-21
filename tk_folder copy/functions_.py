@@ -46,6 +46,12 @@ def compute_rir(room_dim, absorption, max_order: int, mic_positions: dict, src_p
     src_positions : dict
         The source positions.
         format: {"src_1": [x1, y1, z1], "src_2": [x2, y2, z2], ...}
+    audio_signal : ndarray
+        The audio signal to be used as the source signal.
+    temperature : float
+        The temperature of the room.
+    humidity : float
+        The humidity of the room.
 
     Returns
     -------
@@ -55,7 +61,7 @@ def compute_rir(room_dim, absorption, max_order: int, mic_positions: dict, src_p
     
     """
 
-    room = pra.ShoeBox(room_dim, fs=32000, absorption=absorption, max_order=max_order, ray_tracing=True, use_rand_ism=True, max_rand_disp=0.05, air_absorption=True, temperature=temperature, humidity=humidity)    
+    room = pra.ShoeBox(room_dim, fs=32000, absorption=absorption, max_order=max_order, ray_tracing=True, use_rand_ism=True, max_rand_disp=0.01, air_absorption=True, temperature=temperature, humidity=humidity)    
     for src_pos in src_positions.values():
         room.add_source(src_pos, signal=audio_signal)
 

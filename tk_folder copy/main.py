@@ -375,7 +375,7 @@ class MainFrame(ttk.Frame):
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Test")
+        self.title("Room Impulse Response Generator")
         self.geometry("610x500")
         self.shared_data = SharedData()
         self.main_frame = MainFrame(self, self.shared_data)

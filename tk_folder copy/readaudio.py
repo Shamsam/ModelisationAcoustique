@@ -17,9 +17,16 @@ def read_audio_file(file_path, sample_rate=32000):
 
 
 def apply_rir_to_audio(audio, rir):
-    # Compute the FFT of the input signals
-    audio_fft = scipy.fft.fft(audio)
-    rir_fft = scipy.fft.fft(rir)
+    # Calculate the required size for zero-padding
+    size = len(audio) + len(rir) - 1
+
+    # Zero-pad the input signals
+    audio_padded = np.pad(audio, (0, size - len(audio)))
+    rir_padded = np.pad(rir, (0, size - len(rir)))
+
+    # Compute the FFT of the zero-padded input signals
+    audio_fft = scipy.fft.fft(audio_padded)
+    rir_fft = scipy.fft.fft(rir_padded)
 
     # Compute the product of the FFTs
     product_fft = audio_fft * rir_fft
@@ -50,7 +57,6 @@ def process_audio_with_rir(audio_file_path=str, room_dim=list, absorption=float,
     except Exception as e:
         print(e)
         return None, None
-
 
     if status_callback:
         status_callback("Calculating room impulse responses...")

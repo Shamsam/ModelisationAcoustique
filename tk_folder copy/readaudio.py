@@ -3,6 +3,10 @@ import librosa
 from scipy import signal
 from functions_ import compute_rir, calculate_responses
 from plotting_fcts import plot_rir, plotting_buttons_window
+import pyroomacoustics as pra
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import tkinter as tk
 
 def read_audio_file(file_path, sample_rate=16000):
     audio, _ = librosa.load(file_path, sr=sample_rate, mono=True)
@@ -29,10 +33,11 @@ def process_audio_with_rir(audio_file_path=str, room_dim=list, absorption=float,
         progress_callback(10)
 
     try:
-        room = compute_rir(room_dim, absorption, max_order, mic_positions, src_positions)
+        room = compute_rir(room_dim, absorption, max_order, mic_positions, src_positions, audio_signal)
     except Exception as e:
         print(e)
         return None, None
+
 
     if status_callback:
         status_callback("Calculating room impulse responses...")
@@ -69,6 +74,35 @@ def process_audio_with_rir(audio_file_path=str, room_dim=list, absorption=float,
             if len(convolved_audio) < len(processed_audio):
                 convolved_audio = np.pad(convolved_audio, (0, len(processed_audio) - len(convolved_audio)), 'constant')
             processed_audio += convolved_audio
+    except Exception as e:
+        print(e)
+        return None, None
+
+
+    if status_callback:
+        status_callback("Plotting processed audio...")
+        progress_callback(95)
+
+    try: 
+        window = tk.Tk()
+        window.title('Signal')
+        
+
+        t2 = np.arange(0, len(processed_audio)/16000, 1/16000)
+        t1 = np.arange(0, len(processed_audio)/16000, 1/16000)
+        fig = plt.figure(figsize=(10, 5))
+        ax = fig.add_subplot(111)
+        ax.plot(t1, processed_audio, label='Processed signal', alpha=0.5)
+        ax.plot(t2, audio_signal, label='Original signal', alpha=0.5)
+        ax.set_xlabel('Time [s]')
+        ax.set_ylabel('Amplitude')
+        ax.set_title('Signal')
+        ax.legend()
+
+        canvas = FigureCanvasTkAgg(fig, master=window)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        canvas.draw()
     except Exception as e:
         print(e)
         return None, None

@@ -15,6 +15,9 @@ class SharedData:
         self.absorption = tk.DoubleVar(name="absorption_var", value=0.5)
         self.max_reflection_order = tk.IntVar(name="max_reflection_order_var", value=3)
         self.room_dimensions = (tk.DoubleVar(name="x", value=5), tk.DoubleVar(name="y", value=5), tk.DoubleVar(name="z", value=5))
+        self.humidity = tk.DoubleVar(name="humidity", value=0.5)
+        self.temperature = tk.DoubleVar(name="temperature", value=20)
+        
 
         self.microphone_data = {}
         self.source_data = {}

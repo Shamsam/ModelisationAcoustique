@@ -119,7 +119,8 @@ def plot_freq_resp(room: pra.Room, max_rir_len: int):
             rir = room.rir[0][src_idx] / np.max(np.abs(room.rir[0][src_idx]))
             freq, resp = freqz(rir)
             freq = freq / (2 * np.pi) * room.fs
-            ax.semilogx(freq, 20 * np.log10(np.abs(resp)), label="Source " + str(src_idx), alpha=0.5)
+            # ax.semilogx(freq, 20 * np.log10(np.abs(resp)), label="Source " + str(src_idx), alpha=0.5)
+            ax.plot(freq, 20 * np.log10(np.abs(resp)), label="Source " + str(src_idx), alpha=0.5)
     except Exception as e:
         print(e)
         print('Error in plotting the frequency response')

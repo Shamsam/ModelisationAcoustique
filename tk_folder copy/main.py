@@ -15,7 +15,7 @@ class SharedData:
         self.absorption = tk.DoubleVar(name="absorption_var", value=0.5)
         self.max_reflection_order = tk.IntVar(name="max_reflection_order_var", value=3)
         self.room_dimensions = (tk.DoubleVar(name="x", value=5), tk.DoubleVar(name="y", value=5), tk.DoubleVar(name="z", value=5))
-        self.humidity = tk.DoubleVar(name="humidity", value=0.5)
+        self.humidity = tk.DoubleVar(name="humidity", value=0)
         self.temperature = tk.DoubleVar(name="temperature", value=20)
         
 
@@ -34,9 +34,13 @@ class BaseParameters(ttk.Frame):
         self.abs_data = shared_data.absorption
         self.max_ref_data = shared_data.max_reflection_order
         self.room_dim_data = shared_data.room_dimensions
+        self.humidity_data = shared_data.humidity
+        self.temperature_data = shared_data.temperature
         self.create_scale("Absorption", self.abs_data, 0)
         self.create_widgets("Max reflection order", self.max_ref_data, 1)
-        self.create_room_dim_widget("Room dimensions", self.room_dim_data, 2)
+        self.create_widgets("Humidity", self.humidity_data, 2)
+        self.create_widgets("Temperature", self.temperature_data, 3)
+        self.create_room_dim_widget("Room dimensions", self.room_dim_data, 4)
         self.create_room_visualization()
 
     def create_scale(self, text, variable, row):
@@ -127,17 +131,6 @@ class BaseParameters(ttk.Frame):
         for mic_vars in self.shared_data.microphone_data.values():
             for mic_var in mic_vars:
                 mic_var.trace_add("write", update_room_visualization)
-
-        update_room_visualization()
-
-
-        for var in self.room_dim_data:
-            var.trace_add("write", update_room_visualization)
-
-        for mic_vars in self.shared_data.microphone_data.values():
-            for mic_var in mic_vars:
-                mic_var.trace_add("write", update_room_visualization)
-
 
         update_room_visualization()
     
@@ -330,6 +323,8 @@ class CalculationsParameters(ttk.Frame):
         self.abs = self.shared_data.absorption.get()
         self.max_reflection_order = self.shared_data.max_reflection_order.get()
         self.file_path = self.shared_data.file_path.get()
+        self.temperature = self.shared_data.temperature.get()
+        self.humidity = self.shared_data.humidity.get()
         print('Retreived vars!')
 
     def update_progress(self, value):
@@ -342,7 +337,7 @@ class CalculationsParameters(ttk.Frame):
     def process_audio(self):
         print('processing audio...')
         try:
-            processed_audio, sample_rate, rir_responses = process_audio_with_rir(self.file_path, self.room_dim, self.abs, self.max_reflection_order, self.mic_data, self.src_data, progress_callback=self.update_progress, status_callback=self.update_status)
+            processed_audio, sample_rate = process_audio_with_rir(self.file_path, self.room_dim, self.abs, self.max_reflection_order, self.mic_data, self.src_data, progress_callback=self.update_progress, status_callback=self.update_status, temperature=self.temperature, humidity=self.humidity)
             sf.write('processed.wav', processed_audio, sample_rate)
             self.update_status('Audio processed!')
         except Exception as e:

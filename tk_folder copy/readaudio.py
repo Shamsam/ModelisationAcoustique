@@ -17,7 +17,7 @@ def apply_rir_to_audio(audio, rir):
         return signal.convolve(audio, rir, mode="full")
 
 
-def process_audio_with_rir(audio_file_path=str, room_dim=list, absorption=float, max_order=int, mic_positions=dict, src_positions=dict, progress_callback=None, status_callback=None):
+def process_audio_with_rir(audio_file_path=str, room_dim=list, absorption=float, max_order=int, mic_positions=dict, src_positions=dict, progress_callback=None, status_callback=None, temperature=float, humidity=float):
     if status_callback:
         status_callback("Reading audio file...")
         progress_callback(0)
@@ -33,7 +33,7 @@ def process_audio_with_rir(audio_file_path=str, room_dim=list, absorption=float,
         progress_callback(10)
 
     try:
-        room = compute_rir(room_dim, absorption, max_order, mic_positions, src_positions, audio_signal)
+        room = compute_rir(room_dim, absorption, max_order, mic_positions, src_positions, audio_signal, temperature=temperature, humidity=humidity)
     except Exception as e:
         print(e)
         return None, None
@@ -88,7 +88,7 @@ def process_audio_with_rir(audio_file_path=str, room_dim=list, absorption=float,
         window.title('Signal')
         
 
-        t2 = np.arange(0, len(processed_audio)/16000, 1/16000)
+        t2 = np.arange(0, len(audio_signal)/16000, 1/16000)
         t1 = np.arange(0, len(processed_audio)/16000, 1/16000)
         fig = plt.figure(figsize=(10, 5))
         ax = fig.add_subplot(111)
@@ -110,4 +110,4 @@ def process_audio_with_rir(audio_file_path=str, room_dim=list, absorption=float,
     if progress_callback:
         progress_callback(100)
 
-    return processed_audio, room.fs, rir_responses
+    return processed_audio, room.fs

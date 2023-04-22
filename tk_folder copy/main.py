@@ -6,8 +6,6 @@ from readaudio import process_audio_with_rir
 import soundfile as sf
 from readaudio import read_audio_file
 from tkinter import messagebox
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 class SharedData:

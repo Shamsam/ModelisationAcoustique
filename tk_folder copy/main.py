@@ -2,11 +2,9 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import filedialog
 import sounddevice as sd
-from readaudio import process_audio_with_rir
+from readaudio import process_audio_with_rir, read_audio_file
 import soundfile as sf
-from readaudio import read_audio_file
 from tkinter import messagebox
-
 
 class SharedData:
     def __init__(self):

@@ -28,7 +28,7 @@ def freq_resp(room: pra.ShoeBox, norm_ir):
     return freq_response
 
 
-def compute_rir(room_dim, absorption, max_order: int, mic_positions: dict, src_positions: dict):
+def compute_rir(room_dim, absorption, max_order: int, mic_positions: dict, src_positions: dict, audio_signal: np.ndarray, temperature: float, humidity: float):
     """Compute the room impulse response of the room.\n
     **NOT OFFICIAL pyroomacoustics function**
 
@@ -46,6 +46,12 @@ def compute_rir(room_dim, absorption, max_order: int, mic_positions: dict, src_p
     src_positions : dict
         The source positions.
         format: {"src_1": [x1, y1, z1], "src_2": [x2, y2, z2], ...}
+    audio_signal : ndarray
+        The audio signal to be used as the source signal.
+    temperature : float
+        The temperature of the room.
+    humidity : float
+        The humidity of the room.
 
     Returns
     -------
@@ -54,26 +60,47 @@ def compute_rir(room_dim, absorption, max_order: int, mic_positions: dict, src_p
         Access the room impulse response: room.rir[mic_idx][src_idx]
     
     """
-
-    room = pra.ShoeBox(room_dim, fs=16000, absorption=absorption, max_order=max_order)    
+    ceiling_mat = {
+        'description': 'ceiling',
+        'coeffs': [0.1, 0.2, 0.1, 0.1, 0.1, 0.05],
+        'center_freqs': [125, 250, 500, 1000, 2000, 4000]
+    }
+    floor_mat = {
+        'description': 'floor',
+        'coeffs': [0.1, 0.2, 0.1, 0.1, 0.1, 0.05],
+        'center_freqs': [125, 250, 500, 1000, 2000, 4000]
+    }
+    wall_mat = {
+        'description': 'wall',
+        'coeffs': [0.1, 0.2, 0.1, 0.1, 0.1, 0.05],
+        'center_freqs': [125, 250, 500, 1000, 2000, 4000]
+    }
+    material = pra.make_materials(floor=floor_mat, ceiling=ceiling_mat, west=wall_mat, east=wall_mat, north=wall_mat, south=wall_mat)
+    room = pra.ShoeBox(room_dim, fs=32000, materials=material, 
+                       max_order=max_order, ray_tracing=True, use_rand_ism=True, 
+                       max_rand_disp=0.01, air_absorption=True, temperature=temperature, humidity=humidity)
+    #room = pra.ShoeBox(room_dim, fs=32000, materials=pra.Material(absorption), max_order=max_order, ray_tracing=True, use_rand_ism=True, max_rand_disp=0.01, air_absorption=True, temperature=temperature, humidity=humidity)    
     for src_pos in src_positions.values():
-        room.add_source(src_pos)
+        room.add_source(src_pos, signal=audio_signal)
 
     for mic_pos in mic_positions.values():
         room.add_microphone_array(pra.MicrophoneArray(np.array([mic_pos]).T, room.fs))
 
-
+    room.set_ray_tracing(n_rays=100000, energy_thres=1e-5)
     room.compute_rir()
+    room.simulate()
+
     return room
 
-def calculate_responses(room: pra.ShoeBox, mic_positions: dict, src_positions: dict, norm: bool = True, freqresp: bool = True):
-    """Compute the frequency response of the room impulse response.\n
+
+def calculate_responses(room: pra.ShoeBox, mic_positions: dict, src_positions: dict):
+    """Calculate the room impulse response and the frequency response.\n
     **NOT OFFICIAL pyroomacoustics function**
 
     Parameters
     ----------
-    room : pyroomacoustics.ShoeBox
-        The room object.
+    room : pyroomacoustics.Room
+        The room object and its properties.
         Access the room impulse response: room.rir[mic_idx][src_idx]
     mic_positions : dict
         The microphone positions.
@@ -81,40 +108,19 @@ def calculate_responses(room: pra.ShoeBox, mic_positions: dict, src_positions: d
     src_positions : dict
         The source positions.
         format: {"src_1": [x1, y1, z1], "src_2": [x2, y2, z2], ...}
-    norm : bool, optional
-        Normalize the combined room impulse response, by default True
-    freqresp : bool, optional
-        Compute the frequency response of the combined room impulse response, by default True
 
     Returns
     -------
-    freq_responses : dict
-        The dict of frequency responses.
-        format: {"mic_1": (freq, response), "mic_2": (freq, response), ...}
-        to access the frequency response in loops: freq_responses[f"mic_{mic_idx + 1}"]
-    comb_imp_responses : dict
-        The dict of combined and normalized room impulse responses.
-        format: {"mic_1": combined_rir, "mic_2": combined_rir, ...}
-        to access the combined room impulse response in loops: comb_imp_responses[f"mic_{mic_idx + 1}"]
-    
+    rir_responses : dict
+        The dict of room impulse responses.
+        format: {"mic_1": [rir_1, rir_2, ...], "mic_2": [rir_1, rir_2, ...], ...}
     """
-    comb_imp_responses = {}
-    freq_responses = {}
+
+    rir_responses = {}
     for mic_idx in range(len(mic_positions)):
-        max_rir_len = max(len(room.rir[mic_idx][src_idx]) for src_idx in range(len(src_positions))) 
-        combined_rir = sum(np.resize(room.rir[mic_idx][src_idx], max_rir_len) for src_idx in range(len(src_positions)))
-        if norm: 
-            combined_rir /= max(combined_rir)
-        if freqresp:
-            freq, response = freq_resp(room, combined_rir) 
-            freq_responses[f"mic_{mic_idx + 1}"] = (freq, response)
-        else:
-            comb_imp_responses[f"mic_{mic_idx + 1}"] = combined_rir
-    if freqresp:
-        return freq_responses
-    else:
-        return comb_imp_responses
-# plot the frequency response with matplotlib
+        rir_responses[f"mic_{mic_idx + 1}"] = [room.rir[mic_idx][src_idx] for src_idx in range(len(src_positions))]
+    return rir_responses
+
 def plot_freq_response(freq_responses: dict, mic_positions: dict):
     """Plot the frequency response of the room impulse response.\n
     **NOT OFFICIAL pyroomacoustics function**
@@ -124,7 +130,6 @@ def plot_freq_response(freq_responses: dict, mic_positions: dict):
     freq_responses : dict
         The dict of frequency responses.
         format: {"mic_1": (freq, response), "mic_2": (freq, response), ...}
-        to access the frequency response in loops: freq_responses[f"mic_{mic_idx + 1}"]
     mic_positions : dict
         The microphone positions.
         format: {"mic_1": [x1, y1, z1], "mic_2": [x2, y2, z2], ...}
@@ -132,9 +137,8 @@ def plot_freq_response(freq_responses: dict, mic_positions: dict):
     Returns
     -------
     freq_plots : list
-        The list of frequency response plots.
+        The list of frequency plots.
         format: [plt.plot(freq, 20 * np.log10(np.abs(response)), label=f"mic_{mic_idx + 1}"), ...]
-    
     """
     freq_plots = []
     for mic_idx in range(len(mic_positions)):

@@ -28,7 +28,7 @@ def freq_resp(room: pra.ShoeBox, norm_ir):
     return freq_response
 
 
-def compute_rir(room_dim, absorption, max_order: int, mic_positions: dict, src_positions: dict, audio_signal: np.ndarray, temperature: float, humidity: float):
+def compute_rir(room_dim, absorption: str, max_order: int, mic_positions: dict, src_positions: dict, audio_signal: np.ndarray, temperature: float, humidity: float):
     """Compute the room impulse response of the room.\n
     **NOT OFFICIAL pyroomacoustics function**
 
@@ -60,33 +60,21 @@ def compute_rir(room_dim, absorption, max_order: int, mic_positions: dict, src_p
         Access the room impulse response: room.rir[mic_idx][src_idx]
     
     """
-    ceiling_mat = {
-        'description': 'ceiling',
-        'coeffs': [0.1, 0.2, 0.1, 0.1, 0.1, 0.05],
-        'center_freqs': [125, 250, 500, 1000, 2000, 4000]
-    }
-    floor_mat = {
-        'description': 'floor',
-        'coeffs': [0.1, 0.2, 0.1, 0.1, 0.1, 0.05],
-        'center_freqs': [125, 250, 500, 1000, 2000, 4000]
-    }
-    wall_mat = {
-        'description': 'wall',
-        'coeffs': [0.1, 0.2, 0.1, 0.1, 0.1, 0.05],
-        'center_freqs': [125, 250, 500, 1000, 2000, 4000]
-    }
-    material = pra.make_materials(floor=floor_mat, ceiling=ceiling_mat, west=wall_mat, east=wall_mat, north=wall_mat, south=wall_mat)
+    absorption = absorption.split(', ')
+    
+
+    material = pra.make_materials(floor=absorption[0], ceiling=absorption[1], west=absorption[2], east=absorption[2], north=absorption[2], south=absorption[2])
     room = pra.ShoeBox(room_dim, fs=32000, materials=material, 
                        max_order=max_order, ray_tracing=True, use_rand_ism=True, 
                        max_rand_disp=0.01, air_absorption=True, temperature=temperature, humidity=humidity)
-    #room = pra.ShoeBox(room_dim, fs=32000, materials=pra.Material(absorption), max_order=max_order, ray_tracing=True, use_rand_ism=True, max_rand_disp=0.01, air_absorption=True, temperature=temperature, humidity=humidity)    
+       
     for src_pos in src_positions.values():
         room.add_source(src_pos, signal=audio_signal)
 
     for mic_pos in mic_positions.values():
         room.add_microphone_array(pra.MicrophoneArray(np.array([mic_pos]).T, room.fs))
 
-    room.set_ray_tracing(n_rays=100000, energy_thres=1e-5)
+    room.set_ray_tracing(n_rays=1000000, energy_thres=1e-5)
     room.compute_rir()
     room.simulate()
 

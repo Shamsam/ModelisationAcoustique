@@ -5,16 +5,24 @@ import sounddevice as sd
 from readaudio import process_audio_with_rir, read_audio_file
 import soundfile as sf
 from tkinter import messagebox
+import numpy as np
+
+class GlobalScale:
+    def __init__(self):
+        self.min = np.inf
+        self.max = -np.inf
+
+    def update(self, local_min, local_max):
+        self.min = min(self.min, local_min)
+        self.max = max(self.max, local_max)
 
 class SharedData:
     def __init__(self):
-        self.absorption = tk.DoubleVar(name="absorption_var", value=0.5)
+        self.absorption = tk.StringVar(name="absorption_var", value='carpet_thin, ceiling_plasterboard, panel_fabric_covered_6pcf')
         self.max_reflection_order = tk.IntVar(name="max_reflection_order_var", value=3)
         self.room_dimensions = (tk.DoubleVar(name="x", value=5), tk.DoubleVar(name="y", value=5), tk.DoubleVar(name="z", value=5))
         self.humidity = tk.DoubleVar(name="humidity", value=0)
         self.temperature = tk.DoubleVar(name="temperature", value=20)
-        
-
         self.microphone_data = {}
         self.source_data = {}
         self.file_path = tk.StringVar(name="file_path", value="")
@@ -32,28 +40,15 @@ class BaseParameters(ttk.Frame):
         self.room_dim_data = shared_data.room_dimensions
         self.humidity_data = shared_data.humidity
         self.temperature_data = shared_data.temperature
-        self.create_scale("Absorption", self.abs_data, 0)
-        self.create_widgets("Max reflection order", self.max_ref_data, 1)
-        self.create_widgets("Humidity", self.humidity_data, 2)
-        self.create_widgets("Temperature", self.temperature_data, 3)
-        self.create_room_dim_widget("Room dimensions", self.room_dim_data, 4)
+        label_abs = ttk.Label(self, text="floor, ceiling, walls")
+        label_abs.grid(column=1, row=0, padx=5)
+        self.create_widgets("Absorption", self.abs_data, 1)
+        self.create_widgets("Max reflection order", self.max_ref_data, 2)
+        self.create_widgets("Humidity", self.humidity_data, 3)
+        self.create_widgets("Temperature", self.temperature_data, 4)
+        self.create_room_dim_widget("Room dimensions", self.room_dim_data, 5)
         self.create_room_visualization()
-
-    def create_scale(self, text, variable, row):
-        label = ttk.Label(self, text=text)
-        label.grid(column=0, row=row, sticky=tk.W, padx=5, pady=5)
-        scale = ttk.Scale(self, from_=0, to=1, variable=variable, orient=tk.HORIZONTAL, length=120)
-        scale.grid(column=1, row=row, sticky=tk.W)
-        variable_value = round(variable.get(), 2)
-        variable.set(variable_value)
-        ticklabel = ttk.Label(self, text=variable_value, width=4)
-        ticklabel.grid(column=2, row=row, sticky=tk.W)
-
-        def update_ticklabel(*args):
-            ticklabel.configure(text=round(variable.get(), 2))
-
-        variable.trace_add("write", update_ticklabel)
-
+        
         
     def create_widgets(self, text, variable, row):
         label = ttk.Label(self, text=text)
@@ -73,11 +68,11 @@ class BaseParameters(ttk.Frame):
     def create_room_visualization(self):
         room_visualization = tk.Toplevel()
         room_visualization.title("Room visualization")
-        canvas_width = 1000
+        canvas_width = 500
         canvas_height = 500
-        max_room_size = 20  # Adjust this based on the maximum room size you expect
+        max_room_size = 10  # Adjust this based on the maximum room size you expect
 
-        self.room_canvas = tk.Canvas(room_visualization, width=canvas_width, height=canvas_height)
+        self.room_canvas = tk.Canvas(room_visualization, width=canvas_width, height=canvas_height-150)
         self.room_canvas.pack()
 
         def update_room_visualization(*args):
@@ -307,7 +302,6 @@ class CalculationsParameters(ttk.Frame):
     
     def get_vars(self):
         print('reading vars...')
-        self.shared_data.absorption.set(round(self.shared_data.absorption.get(), 2))
         self.mic_data = {}
         self.src_data = {}
         for key, value in self.shared_data.microphone_data.items():

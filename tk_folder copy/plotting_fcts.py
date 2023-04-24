@@ -63,8 +63,13 @@ def plot_rir(room: pra.Room, mic: int, max_rir_len: int):
 
     # Create a new figure and axes for the plot
     fig, ax = plt.subplots(figsize=(8, 6))
+    
+    # Cut after 0.15 seconds
+    cut_time = 0.15
+    cut_samples = int(cut_time * room.fs)
+
     # Compute the time axis for the plot
-    t = np.arange(max_rir_len) / room.fs
+    t = np.arange(min(max_rir_len, cut_samples)) / room.fs
 
     # Plot the room impulse response on the axes
     try:
@@ -72,7 +77,7 @@ def plot_rir(room: pra.Room, mic: int, max_rir_len: int):
             # pad the rir with zeros if it is shorter than the longest rir
             if len(room.rir[mic][src_idx]) < max_rir_len:
                 room.rir[mic][src_idx] = np.pad(room.rir[mic][src_idx], (0, max_rir_len - len(room.rir[mic][src_idx])), 'constant')
-            ax.plot(t, room.rir[mic][src_idx], label="Source " + str(src_idx), alpha=0.5)
+            ax.plot(t, room.rir[mic][src_idx][:min(max_rir_len, cut_samples)], label="Source " + str(src_idx), alpha=0.5)
     except Exception as e:
         print(e)
         print('Error in plotting the room impulse response')
@@ -88,6 +93,7 @@ def plot_rir(room: pra.Room, mic: int, max_rir_len: int):
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
     # Redraw the canvas to update the figure
     canvas.draw()
+
 
 
 def plot_freq_resp(room: pra.Room, max_rir_len: int):
@@ -167,7 +173,7 @@ def plot_spectrogram(room: pra.Room, max_rir_len: int, nperseg=256, noverlap=Non
     """
 
     print('Starting...')
-
+    
     if noverlap is None:
         noverlap = nperseg // 2
     
@@ -194,7 +200,7 @@ def plot_spectrogram(room: pra.Room, max_rir_len: int, nperseg=256, noverlap=Non
 
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("Frequency (Hz)")
-        ax.set_title("Spectrogram of mic0")
+        ax.set_title("Spectrogram of source " + str(src_idx) + " and mic0")
         ax.legend()
         ax.grid(True)  # add grid lines
 

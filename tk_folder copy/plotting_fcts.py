@@ -11,12 +11,16 @@ scipy.fft.set_backend(pyfftw.interfaces.scipy_fft)
 
 
 def plotting_buttons_window(room: pra.Room):
-    """Create a new window for the plotting buttons.
+    """Create a new window with buttons for plotting the room impulse response, the frequency response and the spectrogram.
+
+    Parameters
+    ----------
+    room : pyroomacoustics.Room
+        The room object and its properties.
 
     Returns
     -------
     None
-
     """
     mic = 0
     max_rir_len = max(len(room.rir[mic][src_idx]) for src_idx in range(len(room.sources)))
@@ -44,11 +48,10 @@ def plot_rir(room: pra.Room, mic: int, max_rir_len: int):
     ----------
     room : pyroomacoustics.Room
         The room object and its properties.
-        Access the room impulse response: room.rir[mic_idx][src_idx]
     mic : int
-        The microphone index.
+        The index of the microphone.
     max_rir_len : int
-        The maximum length of the room impulse response.
+        The length of the longest room impulse response.
 
     Returns
     -------
@@ -103,9 +106,8 @@ def plot_freq_resp(room: pra.Room, max_rir_len: int):
     ----------
     room : pyroomacoustics.Room
         The room object and its properties.
-        Access the room impulse response: room.rir[mic_idx][src_idx]
     max_rir_len : int
-        The maximum length of the room impulse response.
+        The length of the longest room impulse response.
 
     Returns
     -------
@@ -155,16 +157,14 @@ def plot_spectrogram(room: pra.Room, max_rir_len: int, nperseg=256, noverlap=Non
     ----------
     room : pyroomacoustics.Room
         The room object and its properties.
-        Access the room impulse response: room.rir[mic_idx][src_idx]
     max_rir_len : int
-        The maximum length of the room impulse response.
-    nperseg : int, optional
-        Length of each segment. Defaults to 256.
-    noverlap : int, optional
-        Number of points to overlap between segments. Defaults to None.
-        Or nperseg // 2 if noverlap is None.
-    cmap : str, optional
-        Colormap to use. Defaults to 'inferno'.
+        The length of the longest room impulse response.
+    nperseg : int
+        The length of each segment.
+    noverlap : int
+        The number of points to overlap between segments.
+    cmap : str
+        The colormap to use.
 
     Returns
     -------

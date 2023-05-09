@@ -29,40 +29,42 @@ def freq_resp(room: pra.ShoeBox, norm_ir):
 
 
 def compute_rir(room_dim, absorption: str, max_order: int, mic_positions: dict, src_positions: dict, audio_signal: np.ndarray, temperature: float, humidity: float):
-    """Compute the room impulse response of the room.\n
+    """Compute the room impulse response.\n
     **NOT OFFICIAL pyroomacoustics function**
 
     Parameters
     ----------
-    room_dim : list
-        The dimensions of the room.
-    absorption : float
-        The absorption coefficient of the room.
+    room_dim : tuple
+
+    absorption : str
+        The absorption of the room. 
+        format: "floor, ceiling, wall"
     max_order : int
-        The maximum reflection order of the room.
+        The maximum order of reflections.
     mic_positions : dict
         The microphone positions.
         format: {"mic_1": [x1, y1, z1], "mic_2": [x2, y2, z2], ...}
+
     src_positions : dict
         The source positions.
         format: {"src_1": [x1, y1, z1], "src_2": [x2, y2, z2], ...}
+
     audio_signal : ndarray
-        The audio signal to be used as the source signal.
+        The audio signal.
+
     temperature : float
         The temperature of the room.
+
     humidity : float
-        The humidity of the room.
 
     Returns
     -------
-    room : pyroomacoustics.Room
-        The room object and its properties.
-        Access the room impulse response: room.rir[mic_idx][src_idx]
-    
+    room : pyroomacoustics.ShoeBox
+        The room object.    
     """
-    absorption = absorption.split(', ')
+    absorption = absorption.split(', ') # format: ["floor", "ceiling", "wall"]
     
-
+    # tout les murs ont la même absorption
     material = pra.make_materials(floor=absorption[0], ceiling=absorption[1], west=absorption[2], east=absorption[2], north=absorption[2], south=absorption[2])
     room = pra.ShoeBox(room_dim, fs=32000, materials=material, 
                        max_order=max_order, ray_tracing=True, use_rand_ism=True, 
